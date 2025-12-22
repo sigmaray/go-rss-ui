@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{ .title }}</title>
+</head>
+<body>
+    <h1>{{ .title }}</h1>
+    <h2>Users</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range .users }}
+            <tr>
+                <td>{{ .ID }}</td>
+                <td>{{ .Username }}</td>
+                <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+    <form action="/logout" method="post">
+        <input type="submit" value="Logout">
+    </form>
+</body>
+</html>
