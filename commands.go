@@ -3,65 +3,28 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"strings"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-// parseDSN extracts connection parameters from DSN string
-func parseDSN(dsn string) (host, user, password, dbname, port string) {
-	// Default values
-	host = "localhost"
-	user = "postgres"
-	password = "postgres"
-	dbname = "go_rss_ui_2"
-	port = "5432"
-
-	// Parse DSN string
-	parts := strings.Fields(dsn)
-	for _, part := range parts {
-		if strings.HasPrefix(part, "host=") {
-			host = strings.TrimPrefix(part, "host=")
-		} else if strings.HasPrefix(part, "user=") {
-			user = strings.TrimPrefix(part, "user=")
-		} else if strings.HasPrefix(part, "password=") {
-			password = strings.TrimPrefix(part, "password=")
-		} else if strings.HasPrefix(part, "dbname=") {
-			dbname = strings.TrimPrefix(part, "dbname=")
-		} else if strings.HasPrefix(part, "port=") {
-			port = strings.TrimPrefix(part, "port=")
-		}
-	}
-	return
-}
-
 // getAdminDSN returns DSN for connecting to postgres database (for admin operations)
 func getAdminDSN() string {
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		dsn = "host=localhost user=postgres password=postgres dbname=go_rss_ui_2 port=5432 sslmode=disable TimeZone=Asia/Shanghai"
-	}
-
-	host, user, password, _, port := parseDSN(dsn)
+	host, user, password, _, port := GetDBConfig()
+	sslmode := getEnvOrDefault("DB_SSLMODE", "disable")
 	// Connect to postgres database for admin operations
-	return fmt.Sprintf("host=%s user=%s password=%s dbname=postgres port=%s sslmode=disable", host, user, password, port)
+	return fmt.Sprintf("host=%s user=%s password=%s dbname=postgres port=%s sslmode=%s",
+		host, user, password, port, sslmode)
 }
 
 // getAppDSN returns DSN for connecting to application database
 func getAppDSN() string {
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		dsn = "host=localhost user=postgres password=postgres dbname=go_rss_ui_2 port=5432 sslmode=disable TimeZone=Asia/Shanghai"
-	}
-	return dsn
+	return GetDSN()
 }
 
-// getDBName extracts database name from DSN
+// getDBName extracts database name from configuration
 func getDBName() string {
-	dsn := getAppDSN()
-	_, _, _, dbname, _ := parseDSN(dsn)
+	_, _, _, dbname, _ := GetDBConfig()
 	return dbname
 }
 

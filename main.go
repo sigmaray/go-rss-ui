@@ -13,6 +13,9 @@ import (
 )
 
 func main() {
+	// Load environment variables from .env file
+	LoadConfig()
+
 	// Check for command-line arguments
 	if len(os.Args) > 1 {
 		command := os.Args[1]
