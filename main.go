@@ -29,6 +29,9 @@ func main() {
 	admin := r.Group("/admin")
 	{
 		admin.Use(AuthRequired())
+		admin.GET("/", func(c *gin.Context) {
+			c.Redirect(http.StatusFound, "/admin/users")
+		})
 		admin.GET("/users", adminIndex)
 		admin.GET("/users/new", showCreateUserForm)
 		admin.POST("/users", createUser)
@@ -41,7 +44,7 @@ func main() {
 	r.POST("/login", login)
 	r.POST("/logout", logout)
 
-	r.Run(":8081")
+	r.Run(":8082")
 }
 
 func AuthRequired() gin.HandlerFunc {
