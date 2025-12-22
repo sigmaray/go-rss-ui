@@ -19,7 +19,7 @@ func ConnectDatabase() {
 		os.Exit(1)
 	}
 
-	db.AutoMigrate(&User{})
+	// db.AutoMigrate(&User{})
 
 	DB = db
 }
