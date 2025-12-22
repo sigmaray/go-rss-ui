@@ -45,7 +45,7 @@ func main() {
 
 	// Run the web server
 	ConnectDatabase()
-	seedUser()
+	// seedUser()
 
 	r := gin.Default()
 	r.LoadHTMLGlob("templates/*")
