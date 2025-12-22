@@ -7,7 +7,7 @@ describe('Admin Panel', () => {
 
   it('should display admin panel title', () => {
     cy.visit('/admin')
-    cy.get('h1').contains('Admin Panel').should('be.visible')
+    cy.get('h1').contains('User Management').should('be.visible')
   })
 
   it('should display users section', () => {
@@ -18,10 +18,11 @@ describe('Admin Panel', () => {
   it('should display users table with headers', () => {
     cy.visit('/admin')
     cy.get('table').should('be.visible')
-    cy.get('thead tr th').should('have.length', 3)
+    cy.get('thead tr th').should('have.length', 4)
     cy.get('thead tr th').first().should('contain', 'ID')
     cy.get('thead tr th').eq(1).should('contain', 'Username')
     cy.get('thead tr th').eq(2).should('contain', 'Created At')
+    cy.get('thead tr th').eq(3).should('contain', 'Actions')
   })
 
   it('should have at least one user (admin)', () => {

@@ -20,7 +20,7 @@ describe('Full Application Flow', () => {
 
     // Should be redirected to admin panel
     cy.url().should('include', '/admin')
-    cy.get('h1').contains('Admin Panel').should('be.visible')
+    cy.get('h1').contains('User Management').should('be.visible')
     cy.get('h2').contains('Users').should('be.visible')
 
     // Verify admin user is listed
@@ -31,7 +31,7 @@ describe('Full Application Flow', () => {
     cy.get('form[action="/logout"] input[type="submit"]').click()
 
     // Should be back to home page
-    cy.url().should('eq', 'http://localhost:8080/')
+    cy.url().should('eq', 'http://localhost:8082/')
     cy.contains('h1', 'My RSS App').should('be.visible')
   })
 
@@ -54,6 +54,6 @@ describe('Full Application Flow', () => {
 
     // Should login successfully
     cy.url().should('include', '/admin')
-    cy.get('h1').contains('Admin Panel').should('be.visible')
+    cy.get('h1').contains('User Management').should('be.visible')
   })
 })

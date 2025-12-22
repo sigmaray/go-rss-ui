@@ -2,7 +2,7 @@ const { defineConfig } = require('cypress')
 
 module.exports = defineConfig({
   e2e: {
-    baseUrl: 'http://localhost:8080',
+    baseUrl: 'http://localhost:8082',
     supportFile: 'cypress/support/e2e.js',
     specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
     video: false,
@@ -12,7 +12,6 @@ module.exports = defineConfig({
     responseTimeout: 15000,
     viewportWidth: 1280,
     viewportHeight: 720,
-    experimentalSessionAndOrigin: false,
     retries: {
       runMode: 2,
       openMode: 0,

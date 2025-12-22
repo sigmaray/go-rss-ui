@@ -14,13 +14,13 @@ Cypress.Commands.add('login', (username = 'admin', password = 'password') => {
   cy.get('input[name="username"]').type(username)
   cy.get('input[name="password"]').type(password)
   cy.get('input[type="submit"]').click()
-  cy.url().should('include', '/admin')
+  cy.url().should('include', '/admin/users')
 })
 
 // Custom command to logout
 Cypress.Commands.add('logout', () => {
   cy.get('form[action="/logout"] input[type="submit"]').click()
-  cy.url().should('eq', 'http://localhost:8080/')
+  cy.url().should('eq', 'http://localhost:8082/')
 })
 
 // Custom command to check if user is logged in
@@ -30,5 +30,5 @@ Cypress.Commands.add('shouldBeLoggedIn', () => {
 
 // Custom command to check if user is logged out
 Cypress.Commands.add('shouldBeLoggedOut', () => {
-  cy.url().should('eq', 'http://localhost:8080/')
+  cy.url().should('eq', 'http://localhost:8082/')
 })
