@@ -1,5 +1,7 @@
 describe('Admin Panel', () => {
   beforeEach(() => {
+    cy.clearCookies()
+    cy.clearLocalStorage()
     cy.login()
   })
 

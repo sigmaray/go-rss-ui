@@ -1,4 +1,8 @@
 describe('Home Page', () => {
+  beforeEach(() => {
+    cy.clearCookies()
+    cy.clearLocalStorage()
+  })
   it('should display the home page with correct title and admin link', () => {
     cy.visit('/')
     cy.contains('h1', 'My RSS App').should('be.visible')

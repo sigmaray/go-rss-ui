@@ -9,19 +9,17 @@
 // ***********************************************
 
 // Custom command to login
-Cypress.Commands.add('login', (username = 'admin', password = 'admin') => {
-  cy.session([username, password], () => {
-    cy.visit('/login')
-    cy.get('input[name="username"]').type(username)
-    cy.get('input[name="password"]').type(password)
-    cy.get('input[type="submit"]').click()
-    cy.url().should('include', '/admin')
-  })
+Cypress.Commands.add('login', (username = 'admin', password = 'password') => {
+  cy.visit('/login')
+  cy.get('input[name="username"]').type(username)
+  cy.get('input[name="password"]').type(password)
+  cy.get('input[type="submit"]').click()
+  cy.url().should('include', '/admin')
 })
 
 // Custom command to logout
 Cypress.Commands.add('logout', () => {
-  cy.get('form[action="/logout"]').submit()
+  cy.get('form[action="/logout"] input[type="submit"]').click()
   cy.url().should('eq', 'http://localhost:8080/')
 })
 

@@ -1,9 +1,8 @@
 describe('Authentication', () => {
   beforeEach(() => {
-    // Clear any existing session before each test
-    cy.window().then((win) => {
-      win.sessionStorage.clear()
-    })
+    // Clear cookies to ensure clean session state
+    cy.clearCookies()
+    cy.clearLocalStorage()
   })
 
   it('should redirect to login when accessing admin without authentication', () => {
@@ -20,7 +19,7 @@ describe('Authentication', () => {
   })
 
   it('should login with correct credentials', () => {
-    cy.login('admin', 'admin')
+    cy.login('admin', 'password')
     cy.shouldBeLoggedIn()
   })
 

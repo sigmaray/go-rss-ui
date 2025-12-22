@@ -6,9 +6,11 @@
   "scripts": {
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
-    "test": "cypress run"
+    "cypress:run:headed": "cypress run --headed",
+    "test": "cypress run",
+    "test:headed": "cypress run --headed"
   },
   "devDependencies": {
-    "cypress": "^13.0.0"
+    "cypress": "^13.6.0"
   }
 }

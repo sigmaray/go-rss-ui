@@ -1,4 +1,8 @@
 describe('Full Application Flow', () => {
+  beforeEach(() => {
+    cy.clearCookies()
+    cy.clearLocalStorage()
+  })
   it('should complete full user journey: home -> login -> admin -> logout', () => {
     // Start at home page
     cy.visit('/')
@@ -11,7 +15,7 @@ describe('Full Application Flow', () => {
 
     // Login with admin credentials
     cy.get('input[name="username"]').type('admin')
-    cy.get('input[name="password"]').type('admin')
+    cy.get('input[name="password"]').type('password')
     cy.get('input[type="submit"]').click()
 
     // Should be redirected to admin panel
@@ -45,7 +49,7 @@ describe('Full Application Flow', () => {
 
     // Try correct credentials
     cy.get('input[name="username"]').clear().type('admin')
-    cy.get('input[name="password"]').clear().type('admin')
+    cy.get('input[name="password"]').clear().type('password')
     cy.get('input[type="submit"]').click()
 
     // Should login successfully
