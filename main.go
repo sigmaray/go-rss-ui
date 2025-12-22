@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -11,6 +13,34 @@ import (
 )
 
 func main() {
+	// Check for command-line arguments
+	if len(os.Args) > 1 {
+		command := os.Args[1]
+		switch command {
+		case "clear-users":
+			CommandClearUsers()
+		case "seed":
+			CommandSeed()
+		case "migrate":
+			CommandMigrate()
+		case "drop-db":
+			CommandDropDB()
+		case "create-db":
+			CommandCreateDB()
+		default:
+			fmt.Println("Unknown command:", command)
+			fmt.Println("\nAvailable commands:")
+			fmt.Println("  clear-users  - Clear all data from users table")
+			fmt.Println("  seed         - Create a standard admin user")
+			fmt.Println("  migrate      - Create tables in database using AutoMigrate")
+			fmt.Println("  drop-db      - Delete the application database")
+			fmt.Println("  create-db    - Create the application database")
+			os.Exit(1)
+		}
+		return
+	}
+
+	// Run the web server
 	ConnectDatabase()
 	seedUser()
 
