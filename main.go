@@ -29,8 +29,10 @@ func main() {
 	admin := r.Group("/admin")
 	{
 		admin.Use(AuthRequired())
-		admin.GET("/", adminIndex)
+		admin.GET("/users", adminIndex)
+		admin.GET("/users/new", showCreateUserForm)
 		admin.POST("/users", createUser)
+		admin.GET("/users/:id/edit", showEditUserForm)
 		admin.POST("/users/:id/edit", editUser)
 		admin.POST("/users/:id/delete", deleteUser)
 	}
@@ -104,7 +106,7 @@ func login(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusFound, "/admin")
+	c.Redirect(http.StatusFound, "/admin/users")
 }
 
 func logout(c *gin.Context) {
@@ -118,9 +120,34 @@ func adminIndex(c *gin.Context) {
 	var users []User
 	DB.Find(&users)
 
-	c.HTML(http.StatusOK, "admin.html", gin.H{
-		"title": "Admin Panel",
+	c.HTML(http.StatusOK, "users.html", gin.H{
+		"title": "User Management",
 		"users": users,
+	})
+}
+
+func showCreateUserForm(c *gin.Context) {
+	c.HTML(http.StatusOK, "create_user.html", gin.H{
+		"title": "Create New User",
+	})
+}
+
+func showEditUserForm(c *gin.Context) {
+	id := c.Param("id")
+
+	var user User
+	if err := DB.First(&user, id).Error; err != nil {
+		c.HTML(http.StatusNotFound, "users.html", gin.H{
+			"title": "User Management",
+			"error": "User not found",
+			"users": []User{},
+		})
+		return
+	}
+
+	c.HTML(http.StatusOK, "edit_user.html", gin.H{
+		"title": "Edit User",
+		"user":  user,
 	})
 }
 
@@ -129,25 +156,23 @@ func createUser(c *gin.Context) {
 	password := c.PostForm("password")
 
 	if username == "" || password == "" {
-		c.HTML(http.StatusBadRequest, "admin.html", gin.H{
-			"title": "Admin Panel",
+		c.HTML(http.StatusBadRequest, "create_user.html", gin.H{
+			"title": "Create New User",
 			"error": "Username and password are required",
-			"users": []User{},
 		})
 		return
 	}
 
 	user := User{Username: username, Password: password}
 	if err := DB.Create(&user).Error; err != nil {
-		c.HTML(http.StatusInternalServerError, "admin.html", gin.H{
-			"title": "Admin Panel",
+		c.HTML(http.StatusInternalServerError, "create_user.html", gin.H{
+			"title": "Create New User",
 			"error": "Failed to create user: " + err.Error(),
-			"users": []User{},
 		})
 		return
 	}
 
-	c.Redirect(http.StatusFound, "/admin")
+	c.Redirect(http.StatusFound, "/admin/users")
 }
 
 func editUser(c *gin.Context) {
@@ -157,10 +182,10 @@ func editUser(c *gin.Context) {
 
 	var user User
 	if err := DB.First(&user, id).Error; err != nil {
-		c.HTML(http.StatusNotFound, "admin.html", gin.H{
-			"title": "Admin Panel",
+		c.HTML(http.StatusNotFound, "edit_user.html", gin.H{
+			"title": "Edit User",
 			"error": "User not found",
-			"users": []User{},
+			"user":  user,
 		})
 		return
 	}
@@ -173,15 +198,15 @@ func editUser(c *gin.Context) {
 	}
 
 	if err := DB.Save(&user).Error; err != nil {
-		c.HTML(http.StatusInternalServerError, "admin.html", gin.H{
-			"title": "Admin Panel",
+		c.HTML(http.StatusInternalServerError, "edit_user.html", gin.H{
+			"title": "Edit User",
 			"error": "Failed to update user: " + err.Error(),
-			"users": []User{},
+			"user":  user,
 		})
 		return
 	}
 
-	c.Redirect(http.StatusFound, "/admin")
+	c.Redirect(http.StatusFound, "/admin/users")
 }
 
 func deleteUser(c *gin.Context) {
@@ -189,8 +214,8 @@ func deleteUser(c *gin.Context) {
 
 	var user User
 	if err := DB.First(&user, id).Error; err != nil {
-		c.HTML(http.StatusNotFound, "admin.html", gin.H{
-			"title": "Admin Panel",
+		c.HTML(http.StatusNotFound, "users.html", gin.H{
+			"title": "User Management",
 			"error": "User not found",
 			"users": []User{},
 		})
@@ -198,13 +223,13 @@ func deleteUser(c *gin.Context) {
 	}
 
 	if err := DB.Delete(&user).Error; err != nil {
-		c.HTML(http.StatusInternalServerError, "admin.html", gin.H{
-			"title": "Admin Panel",
+		c.HTML(http.StatusInternalServerError, "users.html", gin.H{
+			"title": "User Management",
 			"error": "Failed to delete user: " + err.Error(),
 			"users": []User{},
 		})
 		return
 	}
 
-	c.Redirect(http.StatusFound, "/admin")
+	c.Redirect(http.StatusFound, "/admin/users")
 }
