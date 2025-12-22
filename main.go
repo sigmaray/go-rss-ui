@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -31,13 +30,16 @@ func main() {
 	{
 		admin.Use(AuthRequired())
 		admin.GET("/", adminIndex)
+		admin.POST("/users", createUser)
+		admin.POST("/users/:id/edit", editUser)
+		admin.POST("/users/:id/delete", deleteUser)
 	}
 
 	r.GET("/login", showLogin)
 	r.POST("/login", login)
 	r.POST("/logout", logout)
 
-	r.Run(":8080")
+	r.Run(":8081")
 }
 
 func AuthRequired() gin.HandlerFunc {
@@ -120,4 +122,89 @@ func adminIndex(c *gin.Context) {
 		"title": "Admin Panel",
 		"users": users,
 	})
+}
+
+func createUser(c *gin.Context) {
+	username := c.PostForm("username")
+	password := c.PostForm("password")
+
+	if username == "" || password == "" {
+		c.HTML(http.StatusBadRequest, "admin.html", gin.H{
+			"title": "Admin Panel",
+			"error": "Username and password are required",
+			"users": []User{},
+		})
+		return
+	}
+
+	user := User{Username: username, Password: password}
+	if err := DB.Create(&user).Error; err != nil {
+		c.HTML(http.StatusInternalServerError, "admin.html", gin.H{
+			"title": "Admin Panel",
+			"error": "Failed to create user: " + err.Error(),
+			"users": []User{},
+		})
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin")
+}
+
+func editUser(c *gin.Context) {
+	id := c.Param("id")
+	username := c.PostForm("username")
+	password := c.PostForm("password")
+
+	var user User
+	if err := DB.First(&user, id).Error; err != nil {
+		c.HTML(http.StatusNotFound, "admin.html", gin.H{
+			"title": "Admin Panel",
+			"error": "User not found",
+			"users": []User{},
+		})
+		return
+	}
+
+	if username != "" {
+		user.Username = username
+	}
+	if password != "" {
+		user.Password = password
+	}
+
+	if err := DB.Save(&user).Error; err != nil {
+		c.HTML(http.StatusInternalServerError, "admin.html", gin.H{
+			"title": "Admin Panel",
+			"error": "Failed to update user: " + err.Error(),
+			"users": []User{},
+		})
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin")
+}
+
+func deleteUser(c *gin.Context) {
+	id := c.Param("id")
+
+	var user User
+	if err := DB.First(&user, id).Error; err != nil {
+		c.HTML(http.StatusNotFound, "admin.html", gin.H{
+			"title": "Admin Panel",
+			"error": "User not found",
+			"users": []User{},
+		})
+		return
+	}
+
+	if err := DB.Delete(&user).Error; err != nil {
+		c.HTML(http.StatusInternalServerError, "admin.html", gin.H{
+			"title": "Admin Panel",
+			"error": "Failed to delete user: " + err.Error(),
+			"users": []User{},
+		})
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin")
 }
