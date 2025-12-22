@@ -1,0 +1,14 @@
+{
+  "name": "go-rss-ui-2-cypress-tests",
+  "version": "1.0.0",
+  "description": "Cypress tests for Go RSS UI application",
+  "main": "index.js",
+  "scripts": {
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "test": "cypress run"
+  },
+  "devDependencies": {
+    "cypress": "^13.0.0"
+  }
+}
