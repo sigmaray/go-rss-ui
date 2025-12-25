@@ -45,10 +45,21 @@ func main() {
 
 	// Run the web server
 	ConnectDatabase()
-	// seedUser()
+	seedUser()
 
 	r := gin.Default()
-	r.LoadHTMLGlob("templates/*")
+	// Load all templates including partials
+	r.LoadHTMLFiles(
+		"templates/index.html",
+		"templates/login.html",
+		"templates/users.html",
+		"templates/admin.html",
+		"templates/create_user.html",
+		"templates/edit_user.html",
+		"templates/partials/header.html",
+		"templates/partials/footer.html",
+	)
+	r.Static("/static", "./static")
 
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
@@ -156,10 +167,17 @@ func adminIndex(c *gin.Context) {
 	var users []User
 	DB.Find(&users)
 
-	c.HTML(http.StatusOK, "users.html", gin.H{
+	data := gin.H{
 		"title": "User Management",
 		"users": users,
-	})
+	}
+
+	// Check for error in query parameter
+	if errorMsg := c.Query("error"); errorMsg != "" {
+		data["error"] = errorMsg
+	}
+
+	c.HTML(http.StatusOK, "users.html", data)
 }
 
 func showCreateUserForm(c *gin.Context) {
@@ -173,11 +191,7 @@ func showEditUserForm(c *gin.Context) {
 
 	var user User
 	if err := DB.First(&user, id).Error; err != nil {
-		c.HTML(http.StatusNotFound, "users.html", gin.H{
-			"title": "User Management",
-			"error": "User not found",
-			"users": []User{},
-		})
+		c.Redirect(http.StatusFound, "/admin/users?error=User+not+found")
 		return
 	}
 

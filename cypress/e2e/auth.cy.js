@@ -15,7 +15,7 @@ describe('Authentication', () => {
     cy.get('h1').contains('Login').should('be.visible')
     cy.get('input[name="username"]').should('be.visible')
     cy.get('input[name="password"]').should('be.visible')
-    cy.get('input[type="submit"]').should('be.visible')
+    cy.get('button[type="submit"]').should('be.visible')
   })
 
   it('should login with correct credentials', () => {
@@ -27,7 +27,7 @@ describe('Authentication', () => {
     cy.visit('/login')
     cy.get('input[name="username"]').type('wronguser')
     cy.get('input[name="password"]').type('wrongpass')
-    cy.get('input[type="submit"]').click()
+    cy.get('button[type="submit"]').click()
     cy.contains('Invalid credentials').should('be.visible')
     cy.url().should('include', '/login')
   })

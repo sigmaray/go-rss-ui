@@ -1,0 +1,32 @@
+{{ define "layout.html" }}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{ .title }}</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <h1>{{ .title }}</h1>
+
+    {{ if .error }}
+    <div class="error">{{ .error }}</div>
+    {{ end }}
+
+    {{ if .success }}
+    <div class="success">{{ .success }}</div>
+    {{ end }}
+
+    {{ if .message }}
+    <div class="message">{{ .message }}</div>
+    {{ end }}
+
+    {{ if .content }}
+        {{ .content }}
+    {{ else }}
+        {{ block "content" . }}{{ end }}
+    {{ end }}
+</body>
+</html>
+{{ end }}
+

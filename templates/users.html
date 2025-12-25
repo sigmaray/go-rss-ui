@@ -1,61 +1,5 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>{{ .title }}</title>
-    <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .form-group input {
-            padding: 8px;
-            width: 200px;
-        }
-        .error {
-            color: red;
-            margin-bottom: 15px;
-        }
-        .success {
-            color: green;
-            margin-bottom: 15px;
-        }
-        .actions {
-            display: flex;
-            gap: 10px;
-        }
-        .actions form {
-            display: inline;
-        }
-    </style>
-</head>
-<body>
-    <h1>{{ .title }}</h1>
-
-    {{ if .error }}
-    <div class="error">{{ .error }}</div>
-    {{ end }}
-
-    {{ if .success }}
-    <div class="success">{{ .success }}</div>
-    {{ end }}
-
+{{ define "users.html" }}
+{{ template "partials/header.html" . }}
     <div style="margin-bottom: 20px;">
         <a href="/admin/users/new">Create New User</a>
     </div>
@@ -90,5 +34,5 @@
     <form action="/logout" method="post">
         <input type="submit" value="Logout">
     </form>
-</body>
-</html>
+{{ template "partials/footer.html" . }}
+{{ end }}

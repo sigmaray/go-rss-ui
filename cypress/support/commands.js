@@ -13,7 +13,7 @@ Cypress.Commands.add('login', (username = 'admin', password = 'password') => {
   cy.visit('/login')
   cy.get('input[name="username"]').type(username)
   cy.get('input[name="password"]').type(password)
-  cy.get('input[type="submit"]').click()
+  cy.get('button[type="submit"]').click()
   cy.url().should('include', '/admin/users')
 })
 

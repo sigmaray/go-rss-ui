@@ -1,46 +1,5 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>{{ .title }}</title>
-    <style>
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .form-group input {
-            padding: 8px;
-            width: 200px;
-        }
-        .error {
-            color: red;
-            margin-bottom: 15px;
-        }
-        .success {
-            color: green;
-            margin-bottom: 15px;
-        }
-        .actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <h1>{{ .title }}</h1>
-
-    {{ if .error }}
-    <div class="error">{{ .error }}</div>
-    {{ end }}
-
-    {{ if .success }}
-    <div class="success">{{ .success }}</div>
-    {{ end }}
-
+{{ define "create_user.html" }}
+{{ template "partials/header.html" . }}
     <form action="/admin/users" method="post">
         <div class="form-group">
             <label for="username">Username:</label>
@@ -55,5 +14,5 @@
             <a href="/admin/users">Cancel</a>
         </div>
     </form>
-</body>
-</html>
+{{ template "partials/footer.html" . }}
+{{ end }}

@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>{{ .title }}</title>
-</head>
-<body>
-    <h1>{{ .title }}</h1>
+{{ define "index.html" }}
+{{ template "partials/header.html" . }}
     <p><a href="/admin">Go to Admin</a></p>
-</body>
-</html>
+{{ template "partials/footer.html" . }}
+{{ end }}
 

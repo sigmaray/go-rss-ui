@@ -16,7 +16,7 @@ describe('Full Application Flow', () => {
     // Login with admin credentials
     cy.get('input[name="username"]').type('admin')
     cy.get('input[name="password"]').type('password')
-    cy.get('input[type="submit"]').click()
+    cy.get('button[type="submit"]').click()
 
     // Should be redirected to admin panel
     cy.url().should('include', '/admin')
@@ -43,14 +43,14 @@ describe('Full Application Flow', () => {
     // Try wrong credentials
     cy.get('input[name="username"]').type('wrong')
     cy.get('input[name="password"]').type('wrong')
-    cy.get('input[type="submit"]').click()
+    cy.get('button[type="submit"]').click()
     cy.contains('Invalid credentials').should('be.visible')
     cy.url().should('include', '/login')
 
     // Try correct credentials
     cy.get('input[name="username"]').clear().type('admin')
     cy.get('input[name="password"]').clear().type('password')
-    cy.get('input[type="submit"]').click()
+    cy.get('button[type="submit"]').click()
 
     // Should login successfully
     cy.url().should('include', '/admin')

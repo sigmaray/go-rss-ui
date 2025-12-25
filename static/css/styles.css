@@ -1,0 +1,124 @@
+/* General styles */
+body {
+    font-family: Arial, sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+h2 {
+    margin-top: 30px;
+    margin-bottom: 15px;
+}
+
+/* Table styles */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+/* Form styles */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    padding: 8px;
+    width: 200px;
+}
+
+form label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+form input[type="text"],
+form input[type="password"] {
+    padding: 8px;
+    width: 200px;
+    margin-bottom: 10px;
+}
+
+form input[type="submit"],
+button {
+    padding: 8px 16px;
+    cursor: pointer;
+}
+
+/* Message styles */
+.error {
+    color: red;
+    margin-bottom: 15px;
+}
+
+.success {
+    color: green;
+    margin-bottom: 15px;
+}
+
+.message {
+    color: red;
+    margin-bottom: 15px;
+}
+
+/* Actions styles */
+.actions {
+    display: flex;
+    gap: 10px;
+}
+
+.actions form {
+    display: inline;
+}
+
+.actions a {
+    padding: 8px 16px;
+    text-decoration: none;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #333;
+}
+
+.actions a:hover {
+    background-color: #e0e0e0;
+}
+
+/* Links */
+a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Inline form inputs in table */
+.actions form input[type="text"],
+.actions form input[type="password"] {
+    width: 150px;
+    padding: 5px;
+    margin-right: 5px;
+}
+
