@@ -86,6 +86,7 @@ func main() {
 
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
+	r.Use(AddAuthInfo())
 
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{
@@ -136,6 +137,35 @@ func AuthRequired() gin.HandlerFunc {
 		}
 		c.Next()
 	}
+}
+
+// AddAuthInfo adds authentication info to context for all requests
+func AddAuthInfo() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		user := session.Get("user")
+		if user != nil {
+			c.Set("isAuthenticated", true)
+			c.Set("username", user)
+		} else {
+			c.Set("isAuthenticated", false)
+		}
+		c.Next()
+	}
+}
+
+// addAuthToData adds authentication info to template data
+func addAuthToData(c *gin.Context, data gin.H) gin.H {
+	if data == nil {
+		data = gin.H{}
+	}
+	if isAuth, exists := c.Get("isAuthenticated"); exists {
+		data["isAuthenticated"] = isAuth
+	}
+	if username, exists := c.Get("username"); exists {
+		data["username"] = username
+	}
+	return data
 }
 
 func seedUser() {
@@ -205,6 +235,9 @@ func adminIndex(c *gin.Context) {
 		"users": users,
 	}
 
+	// Add auth info
+	data = addAuthToData(c, data)
+
 	// Check for error in query parameter
 	if errorMsg := c.Query("error"); errorMsg != "" {
 		data["error"] = errorMsg
@@ -214,9 +247,10 @@ func adminIndex(c *gin.Context) {
 }
 
 func showCreateUserForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "create_user.html", gin.H{
+	data := addAuthToData(c, gin.H{
 		"title": "Create New User",
 	})
+	c.HTML(http.StatusOK, "create_user.html", data)
 }
 
 func showEditUserForm(c *gin.Context) {
@@ -228,10 +262,11 @@ func showEditUserForm(c *gin.Context) {
 		return
 	}
 
-	c.HTML(http.StatusOK, "edit_user.html", gin.H{
+	data := addAuthToData(c, gin.H{
 		"title": "Edit User",
 		"user":  user,
 	})
+	c.HTML(http.StatusOK, "edit_user.html", data)
 }
 
 func createUser(c *gin.Context) {
@@ -239,19 +274,21 @@ func createUser(c *gin.Context) {
 	password := c.PostForm("password")
 
 	if username == "" || password == "" {
-		c.HTML(http.StatusBadRequest, "create_user.html", gin.H{
+		data := addAuthToData(c, gin.H{
 			"title": "Create New User",
 			"error": "Username and password are required",
 		})
+		c.HTML(http.StatusBadRequest, "create_user.html", data)
 		return
 	}
 
 	user := User{Username: username, Password: password}
 	if err := DB.Create(&user).Error; err != nil {
-		c.HTML(http.StatusInternalServerError, "create_user.html", gin.H{
+		data := addAuthToData(c, gin.H{
 			"title": "Create New User",
 			"error": "Failed to create user: " + err.Error(),
 		})
+		c.HTML(http.StatusInternalServerError, "create_user.html", data)
 		return
 	}
 
@@ -265,11 +302,12 @@ func editUser(c *gin.Context) {
 
 	var user User
 	if err := DB.First(&user, id).Error; err != nil {
-		c.HTML(http.StatusNotFound, "edit_user.html", gin.H{
+		data := addAuthToData(c, gin.H{
 			"title": "Edit User",
 			"error": "User not found",
 			"user":  user,
 		})
+		c.HTML(http.StatusNotFound, "edit_user.html", data)
 		return
 	}
 
@@ -281,11 +319,12 @@ func editUser(c *gin.Context) {
 	}
 
 	if err := DB.Save(&user).Error; err != nil {
-		c.HTML(http.StatusInternalServerError, "edit_user.html", gin.H{
+		data := addAuthToData(c, gin.H{
 			"title": "Edit User",
 			"error": "Failed to update user: " + err.Error(),
 			"user":  user,
 		})
+		c.HTML(http.StatusInternalServerError, "edit_user.html", data)
 		return
 	}
 
@@ -322,10 +361,10 @@ func adminFeedsIndex(c *gin.Context) {
 	var feeds []Feed
 	DB.Find(&feeds)
 
-	data := gin.H{
+	data := addAuthToData(c, gin.H{
 		"title": "Feed Management",
 		"feeds": feeds,
-	}
+	})
 
 	if errorMsg := c.Query("error"); errorMsg != "" {
 		data["error"] = errorMsg
@@ -335,28 +374,31 @@ func adminFeedsIndex(c *gin.Context) {
 }
 
 func showCreateFeedForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "create_feed.html", gin.H{
+	data := addAuthToData(c, gin.H{
 		"title": "Create New Feed",
 	})
+	c.HTML(http.StatusOK, "create_feed.html", data)
 }
 
 func createFeed(c *gin.Context) {
 	url := c.PostForm("url")
 
 	if url == "" {
-		c.HTML(http.StatusBadRequest, "create_feed.html", gin.H{
+		data := addAuthToData(c, gin.H{
 			"title": "Create New Feed",
 			"error": "URL is required",
 		})
+		c.HTML(http.StatusBadRequest, "create_feed.html", data)
 		return
 	}
 
 	feed := Feed{URL: url}
 	if err := DB.Create(&feed).Error; err != nil {
-		c.HTML(http.StatusInternalServerError, "create_feed.html", gin.H{
+		data := addAuthToData(c, gin.H{
 			"title": "Create New Feed",
 			"error": "Failed to create feed: " + err.Error(),
 		})
+		c.HTML(http.StatusInternalServerError, "create_feed.html", data)
 		return
 	}
 
@@ -395,10 +437,10 @@ func adminItemsIndex(c *gin.Context) {
 	
 	query.Order("created_at DESC").Find(&items)
 
-	data := gin.H{
+	data := addAuthToData(c, gin.H{
 		"title": "Items",
 		"items": items,
-	}
+	})
 
 	if errorMsg := c.Query("error"); errorMsg != "" {
 		data["error"] = errorMsg
@@ -416,8 +458,9 @@ func showItem(c *gin.Context) {
 		return
 	}
 
-	c.HTML(http.StatusOK, "item.html", gin.H{
+	data := addAuthToData(c, gin.H{
 		"title": item.Title,
 		"item":  item,
 	})
+	c.HTML(http.StatusOK, "item.html", data)
 }

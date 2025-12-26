@@ -6,6 +6,17 @@
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
+    {{ if .isAuthenticated }}
+    <nav class="admin-menu">
+        <a href="/admin/users">Users</a>
+        <a href="/admin/feeds">Feeds</a>
+        <a href="/admin/items">Items</a>
+        <form action="/logout" method="post" style="display: inline;">
+            <button type="submit">Logout</button>
+        </form>
+    </nav>
+    {{ end }}
+
     <h1>{{ .title }}</h1>
 
     {{ if .error }}
