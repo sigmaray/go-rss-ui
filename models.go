@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -43,5 +45,26 @@ func (user *User) BeforeSave(tx *gorm.DB) error {
 func (user *User) CheckPassword(password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	return err == nil
+}
+
+type Feed struct {
+	gorm.Model
+	URL         string `gorm:"unique_index;not null"`
+	Title       string
+	Description string
+	Items       []Item `gorm:"foreignKey:FeedID"`
+}
+
+type Item struct {
+	gorm.Model
+	FeedID      uint   `gorm:"not null;index"`
+	Title       string
+	Link        string
+	Description string `gorm:"type:text"`
+	Content     string `gorm:"type:text"`
+	Author      string
+	PublishedAt *time.Time
+	GUID        string `gorm:"index"` // Unique identifier from feed
+	Feed        Feed   `gorm:"foreignKey:FeedID"`
 }
 

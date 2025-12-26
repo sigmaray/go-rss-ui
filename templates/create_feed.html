@@ -1,0 +1,13 @@
+{{ define "content" }}
+    <form action="/admin/feeds" method="post">
+        <div class="form-group">
+            <label for="url">Feed URL:</label>
+            <input type="url" id="url" name="url" required>
+        </div>
+        <div class="actions">
+            <button type="submit">Create Feed</button>
+            <a href="/admin/feeds">Cancel</a>
+        </div>
+    </form>
+{{ end }}
+

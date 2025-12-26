@@ -1,0 +1,37 @@
+{{ define "content" }}
+    <h2>Items</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Feed</th>
+                <th>Author</th>
+                <th>Published At</th>
+                <th>Created At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range .items }}
+            <tr>
+                <td>{{ .ID }}</td>
+                <td>{{ .Title }}</td>
+                <td>{{ if .Feed }}{{ .Feed.URL }}{{ else }}N/A{{ end }}</td>
+                <td>{{ .Author }}</td>
+                <td>{{ if .PublishedAt }}{{ .PublishedAt.Format "2006-01-02 15:04:05" }}{{ else }}N/A{{ end }}</td>
+                <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+                <td class="actions">
+                    <a href="/admin/items/{{ .ID }}">View</a>
+                </td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 20px;">
+        <a href="/admin/users">Users</a> | 
+        <a href="/admin/feeds">Feeds</a>
+    </div>
+{{ end }}
+

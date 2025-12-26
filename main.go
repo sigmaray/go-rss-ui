@@ -105,6 +105,16 @@ func main() {
 		admin.GET("/users/:id/edit", showEditUserForm)
 		admin.POST("/users/:id/edit", editUser)
 		admin.POST("/users/:id/delete", deleteUser)
+		
+		// Feeds routes
+		admin.GET("/feeds", adminFeedsIndex)
+		admin.GET("/feeds/new", showCreateFeedForm)
+		admin.POST("/feeds", createFeed)
+		admin.POST("/feeds/:id/delete", deleteFeed)
+		
+		// Items routes
+		admin.GET("/items", adminItemsIndex)
+		admin.GET("/items/:id", showItem)
 	}
 
 	r.GET("/login", showLogin)
@@ -305,4 +315,109 @@ func deleteUser(c *gin.Context) {
 	}
 
 	c.Redirect(http.StatusFound, "/admin/users")
+}
+
+// Feed handlers
+func adminFeedsIndex(c *gin.Context) {
+	var feeds []Feed
+	DB.Find(&feeds)
+
+	data := gin.H{
+		"title": "Feed Management",
+		"feeds": feeds,
+	}
+
+	if errorMsg := c.Query("error"); errorMsg != "" {
+		data["error"] = errorMsg
+	}
+
+	c.HTML(http.StatusOK, "feeds.html", data)
+}
+
+func showCreateFeedForm(c *gin.Context) {
+	c.HTML(http.StatusOK, "create_feed.html", gin.H{
+		"title": "Create New Feed",
+	})
+}
+
+func createFeed(c *gin.Context) {
+	url := c.PostForm("url")
+
+	if url == "" {
+		c.HTML(http.StatusBadRequest, "create_feed.html", gin.H{
+			"title": "Create New Feed",
+			"error": "URL is required",
+		})
+		return
+	}
+
+	feed := Feed{URL: url}
+	if err := DB.Create(&feed).Error; err != nil {
+		c.HTML(http.StatusInternalServerError, "create_feed.html", gin.H{
+			"title": "Create New Feed",
+			"error": "Failed to create feed: " + err.Error(),
+		})
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin/feeds")
+}
+
+func deleteFeed(c *gin.Context) {
+	id := c.Param("id")
+
+	var feed Feed
+	if err := DB.First(&feed, id).Error; err != nil {
+		c.Redirect(http.StatusFound, "/admin/feeds?error=Feed+not+found")
+		return
+	}
+
+	// Delete associated items first
+	DB.Where("feed_id = ?", feed.ID).Delete(&Item{})
+	
+	if err := DB.Delete(&feed).Error; err != nil {
+		c.Redirect(http.StatusFound, "/admin/feeds?error=Failed+to+delete+feed")
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin/feeds")
+}
+
+// Item handlers
+func adminItemsIndex(c *gin.Context) {
+	var items []Item
+	query := DB.Preload("Feed")
+	
+	// Filter by feed if provided
+	if feedID := c.Query("feed_id"); feedID != "" {
+		query = query.Where("feed_id = ?", feedID)
+	}
+	
+	query.Order("created_at DESC").Find(&items)
+
+	data := gin.H{
+		"title": "Items",
+		"items": items,
+	}
+
+	if errorMsg := c.Query("error"); errorMsg != "" {
+		data["error"] = errorMsg
+	}
+
+	c.HTML(http.StatusOK, "items.html", data)
+}
+
+func showItem(c *gin.Context) {
+	id := c.Param("id")
+
+	var item Item
+	if err := DB.Preload("Feed").First(&item, id).Error; err != nil {
+		c.Redirect(http.StatusFound, "/admin/items?error=Item+not+found")
+		return
+	}
+
+	c.HTML(http.StatusOK, "item.html", gin.H{
+		"title": item.Title,
+		"item":  item,
+	})
 }

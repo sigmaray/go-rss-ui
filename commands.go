@@ -69,7 +69,7 @@ func CommandMigrate() {
 	}
 	
 	// Run AutoMigrate for all models
-	err = db.AutoMigrate(&User{})
+	err = db.AutoMigrate(&User{}, &Feed{}, &Item{})
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
