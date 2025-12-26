@@ -1,4 +1,3 @@
-{{ define "layout.html" }}
 <!DOCTYPE html>
 <html>
 <head>
@@ -21,12 +20,6 @@
     <div class="message">{{ .message }}</div>
     {{ end }}
 
-    {{ if .content }}
-        {{ .content }}
-    {{ else }}
-        {{ block "content" . }}{{ end }}
-    {{ end }}
+    {{ block "content" . }}{{ end }}
 </body>
 </html>
-{{ end }}
-

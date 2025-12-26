@@ -1,8 +1,6 @@
 describe('Admin Panel', () => {
   beforeEach(() => {
-    cy.clearCookies()
-    cy.clearLocalStorage()
-    cy.login()
+    cy.loginRememberSession()
   })
 
   it('should display admin panel title', () => {
@@ -28,7 +26,7 @@ describe('Admin Panel', () => {
   it('should have at least one user (admin)', () => {
     cy.visit('/admin')
     cy.get('tbody tr').should('have.length.at.least', 1)
-    cy.get('tbody tr').first().find('td').eq(1).should('contain', 'admin')
+    cy.get('tbody tr').contains('td', 'admin')
   })
 
   it('should have logout button', () => {

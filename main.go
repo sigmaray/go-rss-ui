@@ -5,12 +5,43 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
+	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+func loadTemplates(templatesDir string) multitemplate.Renderer {
+	r := multitemplate.NewRenderer()
+
+	layouts, err := filepath.Glob(templatesDir + "/layouts/*.html")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// includes, err := filepath.Glob(templatesDir + "/includes/*.html")
+	includes, err := filepath.Glob(templatesDir + "/*.html")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Println(includes)
+
+	// Generate our templates map from our layouts/ and includes/ directories
+	for _, include := range includes {
+		layoutCopy := make([]string, len(layouts))
+		copy(layoutCopy, layouts)
+		fmt.Println(layouts)
+		files := append(layoutCopy, include)
+		fmt.Println(files)
+		r.AddFromFiles(filepath.Base(include), files...)
+	}
+	fmt.Println(r)
+	return r
+}
 
 func main() {
 	// Load environment variables from .env file
@@ -48,17 +79,9 @@ func main() {
 	seedUser()
 
 	r := gin.Default()
-	// Load all templates including partials
-	r.LoadHTMLFiles(
-		"templates/index.html",
-		"templates/login.html",
-		"templates/users.html",
-		"templates/admin.html",
-		"templates/create_user.html",
-		"templates/edit_user.html",
-		"templates/partials/header.html",
-		"templates/partials/footer.html",
-	)
+
+	r.HTMLRender = loadTemplates("./templates")
+
 	r.Static("/static", "./static")
 
 	store := cookie.NewStore([]byte("secret"))

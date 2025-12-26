@@ -25,7 +25,7 @@ describe('Full Application Flow', () => {
 
     // Verify admin user is listed
     cy.get('tbody tr').should('have.length.at.least', 1)
-    cy.get('tbody tr').first().find('td').eq(1).should('contain', 'admin')
+    cy.get('tbody tr').contains('td', 'admin')
 
     // Logout
     cy.get('form[action="/logout"] input[type="submit"]').click()

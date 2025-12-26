@@ -1,8 +1,6 @@
 describe('User Management', () => {
   beforeEach(() => {
-    cy.clearCookies()
-    cy.clearLocalStorage()
-    cy.login()
+    cy.loginRememberSession()
   })
 
   describe('Create User', () => {

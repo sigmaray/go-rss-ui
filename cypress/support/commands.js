@@ -8,6 +8,18 @@
 // https://on.cypress.io/custom-commands
 // ***********************************************
 
+
+// Custom command to login
+Cypress.Commands.add('loginRememberSession', (username = 'admin', password = 'password') => {
+  cy.session([username, password], () => {
+    cy.visit('/login')
+    cy.get('input[name="username"]').type(username)
+    cy.get('input[name="password"]').type(password)
+    cy.get('button[type="submit"]').click()
+    cy.url().should('include', '/admin/users')
+  });
+})
+
 // Custom command to login
 Cypress.Commands.add('login', (username = 'admin', password = 'password') => {
   cy.visit('/login')

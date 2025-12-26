@@ -1,5 +1,4 @@
-{{ define "admin.html" }}
-{{ template "partials/header.html" . }}
+{{ define "content" }}
     <h2>Create New User</h2>
     <form action="/admin/users" method="post">
         <div class="form-group">
@@ -47,5 +46,4 @@
     <form action="/logout" method="post">
         <input type="submit" value="Logout">
     </form>
-{{ template "partials/footer.html" . }}
 {{ end }}

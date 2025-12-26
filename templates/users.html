@@ -1,5 +1,4 @@
-{{ define "users.html" }}
-{{ template "partials/header.html" . }}
+{{ define "content" }}
     <div style="margin-bottom: 20px;">
         <a href="/admin/users/new">Create New User</a>
     </div>
@@ -34,5 +33,4 @@
     <form action="/logout" method="post">
         <input type="submit" value="Logout">
     </form>
-{{ template "partials/footer.html" . }}
 {{ end }}

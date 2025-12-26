@@ -1,5 +1,4 @@
-{{ define "login.html" }}
-{{ template "partials/header.html" . }}
+{{ define "content" }}
     <form action="/login" method="post">
         <div class="form-group">
             <label for="username">Username:</label>
@@ -11,5 +10,4 @@
         </div>
         <button type="submit">Login</button>
     </form>
-{{ template "partials/footer.html" . }}
 {{ end }}
