@@ -40,10 +40,15 @@ func CommandClearUsers() {
 	log.Printf("Successfully cleared %d records from users table", result.RowsAffected)
 }
 
-// CommandSeed creates a standard admin user
+// CommandSeed creates a standard admin user and default feeds
 func CommandSeed() {
 	ConnectDatabase()
-	
+	Seed()
+}
+
+// Seed creates admin user and default feeds if they don't exist
+func Seed() {
+	// Seed admin user
 	var user User
 	result := DB.Where("username = ?", "admin").First(&user)
 	if result.Error == gorm.ErrRecordNotFound {
@@ -56,6 +61,30 @@ func CommandSeed() {
 		log.Fatalf("Failed to check for existing user: %v", result.Error)
 	} else {
 		log.Println("Admin user already exists")
+	}
+	
+	// Seed default feeds
+	defaultFeeds := []string{
+		"https://feeds.bbci.co.uk/news/rss.xml",
+		"http://rss.cnn.com/rss/cnn_topstories.rss",
+		"https://www.wired.com/feed/rss",
+	}
+	
+	for _, feedURL := range defaultFeeds {
+		var feed Feed
+		result := DB.Where("url = ?", feedURL).First(&feed)
+		if result.Error == gorm.ErrRecordNotFound {
+			feed := Feed{URL: feedURL}
+			if err := DB.Create(&feed).Error; err != nil {
+				log.Printf("Failed to create feed %s: %v", feedURL, err)
+			} else {
+				log.Printf("Feed created: %s", feedURL)
+			}
+		} else if result.Error != nil {
+			log.Printf("Failed to check for existing feed %s: %v", feedURL, result.Error)
+		} else {
+			log.Printf("Feed already exists: %s", feedURL)
+		}
 	}
 }
 

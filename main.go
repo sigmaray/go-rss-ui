@@ -11,7 +11,6 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 func loadTemplates(templatesDir string) multitemplate.Renderer {
@@ -76,7 +75,7 @@ func main() {
 
 	// Run the web server
 	ConnectDatabase()
-	seedUser()
+	// Seed()
 
 	r := gin.Default()
 
@@ -106,13 +105,13 @@ func main() {
 		admin.GET("/users/:id/edit", showEditUserForm)
 		admin.POST("/users/:id/edit", editUser)
 		admin.POST("/users/:id/delete", deleteUser)
-		
+
 		// Feeds routes
 		admin.GET("/feeds", adminFeedsIndex)
 		admin.GET("/feeds/new", showCreateFeedForm)
 		admin.POST("/feeds", createFeed)
 		admin.POST("/feeds/:id/delete", deleteFeed)
-		
+
 		// Items routes
 		admin.GET("/items", adminItemsIndex)
 		admin.GET("/items/:id", showItem)
@@ -166,18 +165,6 @@ func addAuthToData(c *gin.Context, data gin.H) gin.H {
 		data["username"] = username
 	}
 	return data
-}
-
-func seedUser() {
-	var user User
-	result := DB.Where("username = ?", "admin").First(&user)
-	if result.Error == gorm.ErrRecordNotFound {
-		adminUser := User{Username: "admin", Password: "password"}
-		if err := DB.Create(&adminUser).Error; err != nil {
-			log.Fatalf("Failed to create admin user: %v", err)
-		}
-		log.Println("Admin user 'admin' created with password 'password'")
-	}
 }
 
 func showLogin(c *gin.Context) {
@@ -416,7 +403,7 @@ func deleteFeed(c *gin.Context) {
 
 	// Delete associated items first
 	DB.Where("feed_id = ?", feed.ID).Delete(&Item{})
-	
+
 	if err := DB.Delete(&feed).Error; err != nil {
 		c.Redirect(http.StatusFound, "/admin/feeds?error=Failed+to+delete+feed")
 		return
@@ -429,12 +416,12 @@ func deleteFeed(c *gin.Context) {
 func adminItemsIndex(c *gin.Context) {
 	var items []Item
 	query := DB.Preload("Feed")
-	
+
 	// Filter by feed if provided
 	if feedID := c.Query("feed_id"); feedID != "" {
 		query = query.Where("feed_id = ?", feedID)
 	}
-	
+
 	query.Order("created_at DESC").Find(&items)
 
 	data := addAuthToData(c, gin.H{
