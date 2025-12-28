@@ -31,23 +31,29 @@ func getDBName() string {
 // CommandClearUsers clears all data from users table
 func CommandClearUsers() {
 	ConnectDatabase()
-	
+
 	result := DB.Exec("DELETE FROM users")
 	if result.Error != nil {
 		log.Fatalf("Failed to clear users table: %v", result.Error)
 	}
-	
+
 	log.Printf("Successfully cleared %d records from users table", result.RowsAffected)
 }
 
-// CommandSeed creates a standard admin user and default feeds
-func CommandSeed() {
+// CommandSeedUsers creates a standard admin user
+func CommandSeedUsers() {
 	ConnectDatabase()
-	Seed()
+	SeedUsers()
 }
 
-// Seed creates admin user and default feeds if they don't exist
-func Seed() {
+// CommandSeedFeeds creates default RSS feeds
+func CommandSeedFeeds() {
+	ConnectDatabase()
+	SeedFeeds()
+}
+
+// SeedUsers creates admin user if it doesn't exist
+func SeedUsers() {
 	// Seed admin user
 	var user User
 	result := DB.Where("username = ?", "admin").First(&user)
@@ -62,14 +68,17 @@ func Seed() {
 	} else {
 		log.Println("Admin user already exists")
 	}
-	
+}
+
+// SeedFeeds creates default RSS feeds if they don't exist
+func SeedFeeds() {
 	// Seed default feeds
 	defaultFeeds := []string{
 		"https://feeds.bbci.co.uk/news/rss.xml",
 		"http://rss.cnn.com/rss/cnn_topstories.rss",
 		"https://www.wired.com/feed/rss",
 	}
-	
+
 	for _, feedURL := range defaultFeeds {
 		var feed Feed
 		result := DB.Where("url = ?", feedURL).First(&feed)
@@ -91,18 +100,18 @@ func Seed() {
 // CommandMigrate creates tables in the database using AutoMigrate
 func CommandMigrate() {
 	dsn := getAppDSN()
-	
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	
+
 	// Run AutoMigrate for all models
 	err = db.AutoMigrate(&User{}, &Feed{}, &Item{})
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
-	
+
 	log.Println("Database migration completed successfully")
 }
 
@@ -110,20 +119,20 @@ func CommandMigrate() {
 func CommandDropDB() {
 	dbname := getDBName()
 	adminDSN := getAdminDSN()
-	
+
 	// Connect to postgres database using GORM
 	db, err := gorm.Open(postgres.Open(adminDSN), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to postgres database: %v", err)
 	}
-	
+
 	// Get underlying sql.DB
 	sqlDB, err := db.DB()
 	if err != nil {
 		log.Fatalf("Failed to get database connection: %v", err)
 	}
 	defer sqlDB.Close()
-	
+
 	// Terminate all connections to the target database
 	_, err = sqlDB.Exec(fmt.Sprintf(`
 		SELECT pg_terminate_backend(pg_stat_activity.pid)
@@ -134,13 +143,13 @@ func CommandDropDB() {
 	if err != nil {
 		log.Printf("Warning: Failed to terminate connections: %v", err)
 	}
-	
+
 	// Drop the database (quote identifier to handle special characters)
 	_, err = sqlDB.Exec(fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, dbname))
 	if err != nil {
 		log.Fatalf("Failed to drop database: %v", err)
 	}
-	
+
 	log.Printf("Database '%s' dropped successfully", dbname)
 }
 
@@ -148,20 +157,20 @@ func CommandDropDB() {
 func CommandCreateDB() {
 	dbname := getDBName()
 	adminDSN := getAdminDSN()
-	
+
 	// Connect to postgres database using GORM
 	db, err := gorm.Open(postgres.Open(adminDSN), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to postgres database: %v", err)
 	}
-	
+
 	// Get underlying sql.DB
 	sqlDB, err := db.DB()
 	if err != nil {
 		log.Fatalf("Failed to get database connection: %v", err)
 	}
 	defer sqlDB.Close()
-	
+
 	// Check if database already exists
 	var exists bool
 	err = sqlDB.QueryRow(
@@ -171,18 +180,17 @@ func CommandCreateDB() {
 	if err != nil {
 		log.Fatalf("Failed to check if database exists: %v", err)
 	}
-	
+
 	if exists {
 		log.Printf("Database '%s' already exists", dbname)
 		return
 	}
-	
+
 	// Create the database (quote identifier to handle special characters)
 	_, err = sqlDB.Exec(fmt.Sprintf(`CREATE DATABASE "%s"`, dbname))
 	if err != nil {
 		log.Fatalf("Failed to create database: %v", err)
 	}
-	
+
 	log.Printf("Database '%s' created successfully", dbname)
 }
-

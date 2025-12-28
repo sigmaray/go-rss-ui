@@ -101,8 +101,10 @@ func main() {
 		switch command {
 		case "clear-users":
 			CommandClearUsers()
-		case "seed":
-			CommandSeed()
+		case "seed-users":
+			CommandSeedUsers()
+		case "seed-feeds":
+			CommandSeedFeeds()
 		case "migrate":
 			CommandMigrate()
 		case "drop-db":
@@ -113,7 +115,8 @@ func main() {
 			fmt.Println("Unknown command:", command)
 			fmt.Println("\nAvailable commands:")
 			fmt.Println("  clear-users  - Clear all data from users table")
-			fmt.Println("  seed         - Create a standard admin user")
+			fmt.Println("  seed-users   - Create a standard admin user")
+			fmt.Println("  seed-feeds   - Create default RSS feeds")
 			fmt.Println("  migrate      - Create tables in database using AutoMigrate")
 			fmt.Println("  drop-db      - Delete the application database")
 			fmt.Println("  create-db    - Create the application database")
