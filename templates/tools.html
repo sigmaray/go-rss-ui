@@ -28,6 +28,31 @@
     </div>
 
     <div class="tools-section">
+        <h3>Database Management</h3>
+        
+        <div class="tool-item">
+            <form action="/tools/drop-db" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to DROP the database? This action cannot be undone.');">
+                <button type="submit" class="btn-danger">Drop Database</button>
+            </form>
+            <p class="tool-description">Drops the application database</p>
+        </div>
+
+        <div class="tool-item">
+            <form action="/tools/create-db" method="post" class="inline-form">
+                <button type="submit">Create Database</button>
+            </form>
+            <p class="tool-description">Creates the application database if it doesn't exist</p>
+        </div>
+
+        <div class="tool-item">
+            <form action="/tools/migrate" method="post" class="inline-form">
+                <button type="submit">Migrate Database</button>
+            </form>
+            <p class="tool-description">Creates tables in the database using AutoMigrate</p>
+        </div>
+    </div>
+
+    <div class="tools-section">
         <h3>SQL Query</h3>
         <form action="/tools/execute-sql" method="post" id="sql-form">
             <div class="form-group">

@@ -14,6 +14,7 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/mmcdole/gofeed"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -188,6 +189,9 @@ func main() {
 		tools.POST("/clear-database", clearDatabase)
 		tools.POST("/seed-users", seedUsers)
 		tools.POST("/seed-feeds", seedFeeds)
+		tools.POST("/drop-db", dropDB)
+		tools.POST("/create-db", createDB)
+		tools.POST("/migrate", migrate)
 		tools.POST("/execute-sql", executeSQL)
 	}
 
@@ -1167,4 +1171,152 @@ func executeSQL(c *gin.Context) {
 		"rows":    results,
 		"count":   len(results),
 	})
+}
+
+func dropDB(c *gin.Context) {
+	if !IsCypressMode() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Tools are only available when CYPRESS=true"})
+		return
+	}
+
+	session := sessions.Default(c)
+	dbname := getDBName()
+	adminDSN := getAdminDSN()
+
+	// Connect to postgres database using GORM
+	db, err := gorm.Open(postgres.Open(adminDSN), &gorm.Config{})
+	if err != nil {
+		addFlashError(session, "Failed to connect to postgres database: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	// Get underlying sql.DB
+	sqlDB, err := db.DB()
+	if err != nil {
+		addFlashError(session, "Failed to get database connection: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+	defer sqlDB.Close()
+
+	// Terminate all connections to the target database
+	_, err = sqlDB.Exec(fmt.Sprintf(`
+		SELECT pg_terminate_backend(pg_stat_activity.pid)
+		FROM pg_stat_activity
+		WHERE pg_stat_activity.datname = '%s'
+		AND pid <> pg_backend_pid();
+	`, dbname))
+	if err != nil {
+		log.Printf("Warning: Failed to terminate connections: %v", err)
+	}
+
+	// Drop the database (quote identifier to handle special characters)
+	_, err = sqlDB.Exec(fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, dbname))
+	if err != nil {
+		addFlashError(session, "Failed to drop database: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	addFlashSuccess(session, fmt.Sprintf("Database '%s' dropped successfully", dbname))
+	session.Save()
+	c.Redirect(http.StatusFound, "/tools")
+}
+
+func createDB(c *gin.Context) {
+	if !IsCypressMode() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Tools are only available when CYPRESS=true"})
+		return
+	}
+
+	session := sessions.Default(c)
+	dbname := getDBName()
+	adminDSN := getAdminDSN()
+
+	// Connect to postgres database using GORM
+	db, err := gorm.Open(postgres.Open(adminDSN), &gorm.Config{})
+	if err != nil {
+		addFlashError(session, "Failed to connect to postgres database: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	// Get underlying sql.DB
+	sqlDB, err := db.DB()
+	if err != nil {
+		addFlashError(session, "Failed to get database connection: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+	defer sqlDB.Close()
+
+	// Check if database already exists
+	var exists bool
+	err = sqlDB.QueryRow(
+		"SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1)",
+		dbname,
+	).Scan(&exists)
+	if err != nil {
+		addFlashError(session, "Failed to check if database exists: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	if exists {
+		addFlashSuccess(session, fmt.Sprintf("Database '%s' already exists", dbname))
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	// Create the database (quote identifier to handle special characters)
+	_, err = sqlDB.Exec(fmt.Sprintf(`CREATE DATABASE "%s"`, dbname))
+	if err != nil {
+		addFlashError(session, "Failed to create database: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	addFlashSuccess(session, fmt.Sprintf("Database '%s' created successfully", dbname))
+	session.Save()
+	c.Redirect(http.StatusFound, "/tools")
+}
+
+func migrate(c *gin.Context) {
+	if !IsCypressMode() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Tools are only available when CYPRESS=true"})
+		return
+	}
+
+	session := sessions.Default(c)
+	dsn := getAppDSN()
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		addFlashError(session, "Failed to connect to database: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	// Run AutoMigrate for all models
+	err = db.AutoMigrate(&User{}, &Feed{}, &Item{})
+	if err != nil {
+		addFlashError(session, "Failed to migrate database: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	addFlashSuccess(session, "Database migration completed successfully")
+	session.Save()
+	c.Redirect(http.StatusFound, "/tools")
 }
