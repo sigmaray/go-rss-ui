@@ -137,6 +137,7 @@ func main() {
 	r.HTMLRender = loadTemplates("./templates")
 
 	r.Static("/static", "./static")
+	r.Static("/test_feeds", "./test_feeds")
 
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
@@ -566,9 +567,9 @@ func showCreateFeedForm(c *gin.Context) {
 }
 
 func createFeed(c *gin.Context) {
-	url := c.PostForm("url")
+	feedURL := c.PostForm("url")
 
-	if url == "" {
+	if feedURL == "" {
 		data := addAuthToData(c, gin.H{
 			"title": "Create New Feed",
 			"error": "URL is required",
@@ -577,7 +578,7 @@ func createFeed(c *gin.Context) {
 		return
 	}
 
-	feed := Feed{URL: url}
+	feed := Feed{URL: feedURL}
 	if err := DB.Create(&feed).Error; err != nil {
 		data := addAuthToData(c, gin.H{
 			"title": "Create New Feed",
@@ -781,8 +782,22 @@ func deleteAllItems(c *gin.Context) {
 
 // processFeeds fetches and processes all feeds, returns statistics
 func processFeeds() (itemsCreated, itemsUpdated, errors int) {
+	return processFeedsWithFilter(false)
+}
+
+func processAllFeeds() (itemsCreated, itemsUpdated, errors int) {
+	return processFeedsWithFilter(true)
+}
+
+func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, errors int) {
 	var feeds []Feed
-	DB.Find(&feeds)
+	if includeTest {
+		// Include all feeds (for manual fetch)
+		DB.Find(&feeds)
+	} else {
+		// Exclude test feeds from background fetching (feeds with /test_feeds/ in URL)
+		DB.Where("url NOT LIKE ?", "%/test_feeds/%").Find(&feeds)
+	}
 
 	if len(feeds) == 0 {
 		return 0, 0, 0
@@ -927,7 +942,7 @@ func fetchFeedItems(c *gin.Context) {
 		return
 	}
 
-	itemsCreated, itemsUpdated, errors := processFeeds()
+	itemsCreated, itemsUpdated, errors := processAllFeeds()
 
 	successMsg := fmt.Sprintf("Fetched items: %d created, %d updated", itemsCreated, itemsUpdated)
 	if errors > 0 {
@@ -948,13 +963,13 @@ func startBackgroundFeedFetcher() {
 
 	// Fetch immediately on startup
 	log.Printf("Starting background feed fetcher (interval: %d seconds)", interval)
-	itemsCreated, itemsUpdated, errors := processFeeds()
+	itemsCreated, itemsUpdated, errors := processAllFeeds()
 	log.Printf("Initial feed fetch completed: %d created, %d updated, %d errors", itemsCreated, itemsUpdated, errors)
 
 	// Then fetch at configured interval
 	for range ticker.C {
 		log.Println("Background feed fetch started")
-		itemsCreated, itemsUpdated, errors := processFeeds()
+		itemsCreated, itemsUpdated, errors := processAllFeeds()
 		log.Printf("Background feed fetch completed: %d created, %d updated, %d errors", itemsCreated, itemsUpdated, errors)
 	}
 }
