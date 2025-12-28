@@ -142,8 +142,8 @@ func main() {
 func AuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
-		username := session.Get("user")
-		if username == nil {
+		userID := session.Get("user")
+		if userID == nil {
 			log.Println("User not logged in")
 			c.Redirect(http.StatusFound, "/login")
 			c.Abort()
@@ -152,19 +152,24 @@ func AuthRequired() gin.HandlerFunc {
 
 		// Check if user exists in database
 		var user User
-		usernameStr, ok := username.(string)
+		userIDUint, ok := userID.(uint)
 		if !ok {
-			log.Println("Invalid username type in session")
-			session.Clear()
-			session.Save()
-			c.Redirect(http.StatusFound, "/login")
-			c.Abort()
-			return
+			// Try to convert from float64 (JSON numbers are often float64)
+			if userIDFloat, ok := userID.(float64); ok {
+				userIDUint = uint(userIDFloat)
+			} else {
+				log.Println("Invalid user ID type in session")
+				session.Clear()
+				session.Save()
+				c.Redirect(http.StatusFound, "/login")
+				c.Abort()
+				return
+			}
 		}
 
-		result := DB.Where("username = ?", usernameStr).First(&user)
+		result := DB.First(&user, userIDUint)
 		if result.Error != nil {
-			log.Printf("User '%s' not found in database, invalidating session", usernameStr)
+			log.Printf("User with ID %d not found in database, invalidating session", userIDUint)
 			session.Clear()
 			session.Save()
 			c.Redirect(http.StatusFound, "/login")
@@ -180,10 +185,29 @@ func AuthRequired() gin.HandlerFunc {
 func AddAuthInfo() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
-		user := session.Get("user")
-		if user != nil {
-			c.Set("isAuthenticated", true)
-			c.Set("username", user)
+		userID := session.Get("user")
+		if userID != nil {
+			// Convert user ID to uint
+			var userIDUint uint
+			if id, ok := userID.(uint); ok {
+				userIDUint = id
+			} else if idFloat, ok := userID.(float64); ok {
+				userIDUint = uint(idFloat)
+			} else {
+				c.Set("isAuthenticated", false)
+				c.Next()
+				return
+			}
+
+			// Load user from database to get username
+			var user User
+			if err := DB.First(&user, userIDUint).Error; err == nil {
+				c.Set("isAuthenticated", true)
+				c.Set("username", user.Username)
+				c.Set("userID", userIDUint)
+			} else {
+				c.Set("isAuthenticated", false)
+			}
 		} else {
 			c.Set("isAuthenticated", false)
 		}
@@ -234,7 +258,7 @@ func login(c *gin.Context) {
 	}
 
 	session := sessions.Default(c)
-	session.Set("user", user.Username)
+	session.Set("user", user.ID)
 	if err := session.Save(); err != nil {
 		log.Printf("Error saving session: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
