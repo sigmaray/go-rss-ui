@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -54,5 +56,32 @@ func getEnvOrDefault(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+// GetBackgroundFetchEnabled returns whether background feed fetching is enabled
+// Returns true by default if the variable is not set or empty
+func GetBackgroundFetchEnabled() bool {
+	value := os.Getenv("BACKGROUND_FETCH_ENABLED")
+	if value == "" {
+		return true
+	}
+	// Parse as boolean (case-insensitive)
+	value = strings.ToLower(strings.TrimSpace(value))
+	return value == "true" || value == "1" || value == "yes" || value == "on"
+}
+
+// GetBackgroundFetchInterval returns the background fetch interval in seconds
+// Returns 60 by default if the variable is not set or invalid
+func GetBackgroundFetchInterval() int {
+	value := os.Getenv("BACKGROUND_FETCH_INTERVAL")
+	if value == "" {
+		return 60
+	}
+	interval, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil || interval <= 0 {
+		log.Printf("Warning: Invalid BACKGROUND_FETCH_INTERVAL value '%s', using default 60 seconds", value)
+		return 60
+	}
+	return interval
 }
 

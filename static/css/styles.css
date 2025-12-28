@@ -207,3 +207,14 @@ a:hover {
     text-decoration: none;
 }
 
+/* Error text in tables */
+.error-text {
+    color: #dc3545;
+    font-size: 0.9em;
+    max-width: 300px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+

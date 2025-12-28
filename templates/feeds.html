@@ -20,6 +20,9 @@
                 <th>ID</th>
                 <th>URL</th>
                 <th>Title</th>
+                <th>Last Successfully Fetched</th>
+                <th>Last Error</th>
+                <th>Last Error At</th>
                 <th>Created At</th>
                 <th>Actions</th>
             </tr>
@@ -30,6 +33,9 @@
                 <td>{{ .ID }}</td>
                 <td>{{ .URL }}</td>
                 <td>{{ .Title }}</td>
+                <td>{{ if .LastSuccessfullyFetchedAt }}{{ .LastSuccessfullyFetchedAt.Format "2006-01-02 15:04:05" }}{{ else }}Never{{ end }}</td>
+                <td>{{ if .LastError }}<span class="error-text">{{ .LastError }}{{ else }}—{{ end }}</span></td>
+                <td>{{ if .LastErrorAt }}{{ .LastErrorAt.Format "2006-01-02 15:04:05" }}{{ else }}—{{ end }}</td>
                 <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
                 <td class="actions">
                     <form action="/admin/feeds/{{ .ID }}/delete" method="post" onsubmit="return confirm('Are you sure you want to delete this feed?');">

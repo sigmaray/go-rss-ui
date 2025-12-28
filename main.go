@@ -81,8 +81,12 @@ func main() {
 	ConnectDatabase()
 	// Seed()
 
-	// Start background feed fetcher
-	go startBackgroundFeedFetcher()
+	// Start background feed fetcher if enabled
+	if GetBackgroundFetchEnabled() {
+		go startBackgroundFeedFetcher()
+	} else {
+		log.Println("Background feed fetcher is disabled")
+	}
 
 	r := gin.Default()
 
@@ -138,13 +142,36 @@ func main() {
 func AuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
-		user := session.Get("user")
-		if user == nil {
+		username := session.Get("user")
+		if username == nil {
 			log.Println("User not logged in")
 			c.Redirect(http.StatusFound, "/login")
 			c.Abort()
 			return
 		}
+
+		// Check if user exists in database
+		var user User
+		usernameStr, ok := username.(string)
+		if !ok {
+			log.Println("Invalid username type in session")
+			session.Clear()
+			session.Save()
+			c.Redirect(http.StatusFound, "/login")
+			c.Abort()
+			return
+		}
+
+		result := DB.Where("username = ?", usernameStr).First(&user)
+		if result.Error != nil {
+			log.Printf("User '%s' not found in database, invalidating session", usernameStr)
+			session.Clear()
+			session.Save()
+			c.Redirect(http.StatusFound, "/login")
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }
@@ -733,17 +760,18 @@ func fetchFeedItems(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/admin/items")
 }
 
-// startBackgroundFeedFetcher starts a background goroutine that fetches feeds every 2 minutes
+// startBackgroundFeedFetcher starts a background goroutine that fetches feeds at configured interval
 func startBackgroundFeedFetcher() {
-	ticker := time.NewTicker(2 * time.Minute)
+	interval := GetBackgroundFetchInterval()
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	defer ticker.Stop()
 
 	// Fetch immediately on startup
-	log.Println("Starting background feed fetcher")
+	log.Printf("Starting background feed fetcher (interval: %d seconds)", interval)
 	itemsCreated, itemsUpdated, errors := processFeeds()
 	log.Printf("Initial feed fetch completed: %d created, %d updated, %d errors", itemsCreated, itemsUpdated, errors)
 
-	// Then fetch every 2 minutes
+	// Then fetch at configured interval
 	for range ticker.C {
 		log.Println("Background feed fetch started")
 		itemsCreated, itemsUpdated, errors := processFeeds()
