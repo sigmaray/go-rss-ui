@@ -187,6 +187,7 @@ func main() {
 		tools.GET("", showTools)
 		tools.POST("/clear-database", clearDatabase)
 		tools.POST("/seed-users", seedUsers)
+		tools.POST("/seed-feeds", seedFeeds)
 		tools.POST("/execute-sql", executeSQL)
 	}
 
@@ -661,6 +662,14 @@ func deleteAllFeeds(c *gin.Context) {
 }
 
 func seedFeeds(c *gin.Context) {
+	// Check if this is called from /tools (CYPRESS mode required)
+	if c.Request.URL.Path == "/tools/seed-feeds" {
+		if !IsCypressMode() {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Tools are only available when CYPRESS=true"})
+			return
+		}
+	}
+
 	session := sessions.Default(c)
 
 	defaultFeeds := []string{
@@ -702,7 +711,13 @@ func seedFeeds(c *gin.Context) {
 
 	addFlashSuccess(session, successMsg)
 	session.Save()
-	c.Redirect(http.StatusFound, "/admin/feeds")
+
+	// Redirect based on where the request came from
+	if c.Request.URL.Path == "/tools/seed-feeds" {
+		c.Redirect(http.StatusFound, "/tools")
+	} else {
+		c.Redirect(http.StatusFound, "/admin/feeds")
+	}
 }
 
 // Item handlers
