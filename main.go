@@ -605,6 +605,11 @@ func processFeeds() (itemsCreated, itemsUpdated, errors int) {
 				parsedFeed, err := fp.ParseURL(feed.URL)
 				if err != nil {
 					log.Printf("Error parsing feed %s: %v", feed.URL, err)
+					// Update feed with error information
+					now := time.Now()
+					feed.LastError = err.Error()
+					feed.LastErrorAt = &now
+					DB.Save(&feed)
 					mu.Lock()
 					errors++
 					mu.Unlock()
@@ -618,6 +623,11 @@ func processFeeds() (itemsCreated, itemsUpdated, errors int) {
 				if parsedFeed.Description != "" {
 					feed.Description = parsedFeed.Description
 				}
+				// Update successful fetch timestamp and clear error
+				now := time.Now()
+				feed.LastSuccessfullyFetchedAt = &now
+				feed.LastError = ""
+				feed.LastErrorAt = nil
 				DB.Save(&feed)
 
 				// Process items for this feed
