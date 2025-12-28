@@ -181,6 +181,15 @@ func main() {
 	r.POST("/login", login)
 	r.POST("/logout", logout)
 
+	// Tools routes (only available when CYPRESS=true)
+	if IsCypressMode() {
+		tools := r.Group("/tools")
+		tools.GET("", showTools)
+		tools.POST("/clear-database", clearDatabase)
+		tools.POST("/seed-users", seedUsers)
+		tools.POST("/execute-sql", executeSQL)
+	}
+
 	r.Run(":8082")
 }
 
@@ -260,7 +269,7 @@ func AddAuthInfo() gin.HandlerFunc {
 	}
 }
 
-// addAuthToData adds authentication info to template data
+// addAuthToData adds authentication info and CYPRESS mode to template data
 func addAuthToData(c *gin.Context, data gin.H) gin.H {
 	if data == nil {
 		data = gin.H{}
@@ -271,6 +280,8 @@ func addAuthToData(c *gin.Context, data gin.H) gin.H {
 	if username, exists := c.Get("username"); exists {
 		data["username"] = username
 	}
+	// Add CYPRESS mode info
+	data["isCypressMode"] = IsCypressMode()
 	return data
 }
 
@@ -989,4 +1000,156 @@ func getItemAuthor(item *gofeed.Item) string {
 		return item.Authors[0].Name
 	}
 	return ""
+}
+
+// Tools handlers (only available when CYPRESS=true)
+
+func showTools(c *gin.Context) {
+	if !IsCypressMode() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Tools page is only available when CYPRESS=true"})
+		return
+	}
+
+	data := addAuthToData(c, gin.H{
+		"title": "Tools",
+	})
+	c.HTML(http.StatusOK, "tools.html", data)
+}
+
+func clearDatabase(c *gin.Context) {
+	if !IsCypressMode() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Tools are only available when CYPRESS=true"})
+		return
+	}
+
+	session := sessions.Default(c)
+
+	// Clear all tables
+	if err := DB.Exec("TRUNCATE TABLE items CASCADE").Error; err != nil {
+		addFlashError(session, "Failed to clear items: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	if err := DB.Exec("TRUNCATE TABLE feeds CASCADE").Error; err != nil {
+		addFlashError(session, "Failed to clear feeds: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	if err := DB.Exec("TRUNCATE TABLE users CASCADE").Error; err != nil {
+		addFlashError(session, "Failed to clear users: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	addFlashSuccess(session, "Database cleared successfully")
+	session.Save()
+	c.Redirect(http.StatusFound, "/tools")
+}
+
+func seedUsers(c *gin.Context) {
+	if !IsCypressMode() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Tools are only available when CYPRESS=true"})
+		return
+	}
+
+	session := sessions.Default(c)
+
+	// Create admin user
+	var user User
+	result := DB.Where("username = ?", "admin").First(&user)
+	if result.Error == gorm.ErrRecordNotFound {
+		adminUser := User{Username: "admin", Password: "password"}
+		if err := DB.Create(&adminUser).Error; err != nil {
+			addFlashError(session, "Failed to create admin user: "+err.Error())
+			session.Save()
+			c.Redirect(http.StatusFound, "/tools")
+			return
+		}
+		addFlashSuccess(session, "Admin user 'admin' created with password 'password'")
+	} else if result.Error != nil {
+		addFlashError(session, "Failed to check for existing user: "+result.Error.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	} else {
+		addFlashSuccess(session, "Admin user already exists")
+	}
+
+	session.Save()
+	c.Redirect(http.StatusFound, "/tools")
+}
+
+func executeSQL(c *gin.Context) {
+	if !IsCypressMode() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Tools are only available when CYPRESS=true"})
+		return
+	}
+
+	sqlQuery := c.PostForm("sql")
+	if sqlQuery == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "SQL query is required"})
+		return
+	}
+
+	// Execute SQL query
+	var results []map[string]interface{}
+	rows, err := DB.Raw(sqlQuery).Rows()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	// Get column names
+	columns, err := rows.Columns()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Scan rows
+	for rows.Next() {
+		// Create a slice of interface{} to hold column values
+		values := make([]interface{}, len(columns))
+		valuePtrs := make([]interface{}, len(columns))
+		for i := range columns {
+			valuePtrs[i] = &values[i]
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Create a map for this row
+		row := make(map[string]interface{})
+		for i, col := range columns {
+			val := values[i]
+			// Convert []byte to string for better JSON representation
+			if b, ok := val.([]byte); ok {
+				row[col] = string(b)
+			} else {
+				row[col] = val
+			}
+		}
+		results = append(results, row)
+	}
+
+	if err := rows.Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return JSON response
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"columns": columns,
+		"rows":    results,
+		"count":   len(results),
+	})
 }

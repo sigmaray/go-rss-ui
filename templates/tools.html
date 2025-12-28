@@ -1,0 +1,77 @@
+{{ define "content" }}
+    <h2>Tools</h2>
+    <p>This page is only available when CYPRESS=true</p>
+
+    <div class="tools-section">
+        <h3>Database Operations</h3>
+        
+        <div class="tool-item">
+            <form action="/tools/clear-database" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to clear ALL tables? This action cannot be undone.');">
+                <button type="submit" class="btn-danger">Clear Database</button>
+            </form>
+            <p class="tool-description">Clears all tables (users, feeds, items)</p>
+        </div>
+
+        <div class="tool-item">
+            <form action="/tools/seed-users" method="post" class="inline-form">
+                <button type="submit">Seed Users</button>
+            </form>
+            <p class="tool-description">Creates test admin user (username: admin, password: password)</p>
+        </div>
+    </div>
+
+    <div class="tools-section">
+        <h3>SQL Query</h3>
+        <form action="/tools/execute-sql" method="post" id="sql-form">
+            <div class="form-group">
+                <label for="sql">SQL Query:</label>
+                <textarea id="sql" name="sql" rows="10" cols="80" required style="width: 100%; font-family: monospace;"></textarea>
+            </div>
+            <div class="form-group">
+                <button type="submit">Execute SQL</button>
+            </div>
+        </form>
+        <div id="sql-result" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        document.getElementById('sql-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const resultDiv = document.getElementById('sql-result');
+            
+            resultDiv.innerHTML = '<p>Executing...</p>';
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                resultDiv.innerHTML = '<pre style="background: #f5f5f5; padding: 10px; border: 1px solid #ddd; overflow-x: auto;">' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                resultDiv.innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+            });
+        });
+    </script>
+
+    <style>
+        .tools-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .tool-item {
+            margin-bottom: 20px;
+        }
+        .tool-description {
+            margin-top: 5px;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+{{ end }}
+

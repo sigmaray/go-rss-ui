@@ -85,3 +85,11 @@ func GetBackgroundFetchInterval() int {
 	return interval
 }
 
+// IsCypressMode returns whether the application is running in Cypress mode
+// Returns true if CYPRESS environment variable is set to "true"
+func IsCypressMode() bool {
+	value := os.Getenv("CYPRESS")
+	value = strings.ToLower(strings.TrimSpace(value))
+	return value == "true" || value == "1" || value == "yes" || value == "on"
+}
+
