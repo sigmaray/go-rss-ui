@@ -320,21 +320,13 @@ func logout(c *gin.Context) {
 }
 
 func adminIndex(c *gin.Context) {
-	// Ensure page parameter is set to 1 if not provided or invalid
-	pageParam := c.DefaultQuery("page", "1")
-	if pageParam == "0" || pageParam == "" {
-		c.Redirect(http.StatusFound, "/admin/users?page=1")
-		return
-	}
-
 	var users []User
 	model := DB.Model(&User{}).Order("created_at DESC")
 	page := Paginator.With(model).Request(c.Request).Response(&users)
 
-	// Ensure page is at least 1, redirect if invalid
+	// Ensure page is at least 1
 	if page.Page < 1 {
-		c.Redirect(http.StatusFound, "/admin/users?page=1")
-		return
+		page.Page = 1
 	}
 
 	prevPage := page.Page - 1
@@ -479,21 +471,13 @@ func deleteUser(c *gin.Context) {
 
 // Feed handlers
 func adminFeedsIndex(c *gin.Context) {
-	// Ensure page parameter is set to 1 if not provided or invalid
-	pageParam := c.DefaultQuery("page", "1")
-	if pageParam == "0" || pageParam == "" {
-		c.Redirect(http.StatusFound, "/admin/feeds?page=1")
-		return
-	}
-
 	var feeds []Feed
 	model := DB.Model(&Feed{}).Order("created_at DESC")
 	page := Paginator.With(model).Request(c.Request).Response(&feeds)
 
-	// Ensure page is at least 1, redirect if invalid
+	// Ensure page is at least 1
 	if page.Page < 1 {
-		c.Redirect(http.StatusFound, "/admin/feeds?page=1")
-		return
+		page.Page = 1
 	}
 
 	prevPage := page.Page - 1
@@ -668,30 +652,12 @@ func adminItemsIndex(c *gin.Context) {
 		model = model.Where("feed_id = ?", feedID)
 	}
 
-	// Ensure page parameter is set to 1 if not provided or invalid
-	pageParam := c.DefaultQuery("page", "1")
-	if pageParam == "0" || pageParam == "" {
-		// Preserve feed_id if present
-		redirectURL := "/admin/items?page=1"
-		if feedID := c.Query("feed_id"); feedID != "" {
-			redirectURL += "&feed_id=" + feedID
-		}
-		c.Redirect(http.StatusFound, redirectURL)
-		return
-	}
-
 	model = model.Order("created_at DESC")
 	page := Paginator.With(model).Request(c.Request).Response(&items)
 
-	// Ensure page is at least 1, redirect if invalid
+	// Ensure page is at least 1
 	if page.Page < 1 {
-		// Preserve feed_id if present
-		redirectURL := "/admin/items?page=1"
-		if feedID := c.Query("feed_id"); feedID != "" {
-			redirectURL += "&feed_id=" + feedID
-		}
-		c.Redirect(http.StatusFound, redirectURL)
-		return
+		page.Page = 1
 	}
 
 	prevPage := page.Page - 1
