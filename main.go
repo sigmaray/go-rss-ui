@@ -800,6 +800,13 @@ func adminItemsIndex(c *gin.Context) {
 	// Add pagination data
 	data = addPaginationData(data, page, "/admin/items", "items")
 
+	// Check for error in query parameter (for backward compatibility)
+	if queryError := c.Query("error"); queryError != "" {
+		if _, exists := c.Get("error"); !exists {
+			data["error"] = queryError
+		}
+	}
+
 	data = getTemplateData(c, data)
 	c.HTML(http.StatusOK, "items.html", data)
 }
@@ -809,7 +816,12 @@ func showItem(c *gin.Context) {
 
 	var item Item
 	if err := DB.Preload("Feed").First(&item, id).Error; err != nil {
-		c.Redirect(http.StatusFound, "/admin/items?error=Item+not+found")
+		// Show 404 page instead of redirecting
+		data := getTemplateData(c, gin.H{
+			"title": "404 - Item Not Found",
+			"error": "Item not found",
+		})
+		c.HTML(http.StatusNotFound, "item.html", data)
 		return
 	}
 

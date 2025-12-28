@@ -3,6 +3,9 @@
         <a href="/admin/items">Back to Items</a>
     </div>
 
+    {{ if .error }}
+    <!-- <div class="error">{{ .error }}</div> -->
+    {{ else }}
     <h2>{{ .item.Title }}</h2>
     
     <div style="margin-bottom: 10px;">
@@ -44,5 +47,6 @@
     <div style="margin-top: 20px;">
         <a href="/admin/items">Back to Items</a>
     </div>
+    {{ end }}
 {{ end }}
 

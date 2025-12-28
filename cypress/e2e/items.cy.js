@@ -34,7 +34,16 @@ describe('Items Management', () => {
   describe('View Item', () => {
     it('should show error when viewing non-existent item', () => {
       cy.visit('/admin/items/99999', { failOnStatusCode: false })
-      cy.url().should('include', '/admin/items')
+      // Should stay on the same URL (no redirect)
+      cy.url().should('include', '/admin/items/99999')
+      // Should return 404 status
+      cy.request({
+        url: '/admin/items/99999',
+        failOnStatusCode: false
+      }).then((response) => {
+        expect(response.status).to.eq(404)
+      })
+      // Should show error message
       cy.get('.error').should('be.visible').should('contain', 'Item not found')
     })
 
