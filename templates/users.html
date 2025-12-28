@@ -1,6 +1,6 @@
 {{ define "content" }}
-    <div style="margin-bottom: 20px;">
-        <a href="/admin/users/new">Create New User</a>
+    <div class="users-actions">
+        <a href="/admin/users/new" class="btn-link">Create New User</a>
     </div>
 
     <h2>Users</h2>
@@ -29,4 +29,30 @@
             {{ end }}
         </tbody>
     </table>
+
+    {{ if gt .page.TotalPages 1 }}
+    <div class="pagination">
+        {{ if and (not .page.First) (gt .prevPage 0) }}
+        <a href="/admin/users?page={{ .prevPage }}" class="pagination-link">Previous</a>
+        {{ end }}
+        
+        {{ range .pages }}
+            {{ if eq . -1 }}
+            <span class="pagination-ellipsis">...</span>
+            {{ else if eq . $.page.Page }}
+            <span class="pagination-current">{{ . }}</span>
+            {{ else }}
+            <a href="/admin/users?page={{ . }}" class="pagination-link">{{ . }}</a>
+            {{ end }}
+        {{ end }}
+        
+        {{ if and (not .page.Last) (gt .nextPage 0) }}
+        <a href="/admin/users?page={{ .nextPage }}" class="pagination-link">Next</a>
+        {{ end }}
+    </div>
+    {{ end }}
+    
+    <div class="pagination-info">
+        Page {{ .page.Page }} of {{ .page.TotalPages }} ({{ .page.Total }} total users)
+    </div>
 {{ end }}

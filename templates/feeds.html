@@ -46,5 +46,31 @@
             {{ end }}
         </tbody>
     </table>
+
+    {{ if gt .page.TotalPages 1 }}
+    <div class="pagination">
+        {{ if and (not .page.First) (gt .prevPage 0) }}
+        <a href="/admin/feeds?page={{ .prevPage }}" class="pagination-link">Previous</a>
+        {{ end }}
+        
+        {{ range .pages }}
+            {{ if eq . -1 }}
+            <span class="pagination-ellipsis">...</span>
+            {{ else if eq . $.page.Page }}
+            <span class="pagination-current">{{ . }}</span>
+            {{ else }}
+            <a href="/admin/feeds?page={{ . }}" class="pagination-link">{{ . }}</a>
+            {{ end }}
+        {{ end }}
+        
+        {{ if and (not .page.Last) (gt .nextPage 0) }}
+        <a href="/admin/feeds?page={{ .nextPage }}" class="pagination-link">Next</a>
+        {{ end }}
+    </div>
+    {{ end }}
+    
+    <div class="pagination-info">
+        Page {{ .page.Page }} of {{ .page.TotalPages }} ({{ .page.Total }} total feeds)
+    </div>
 {{ end }}
 

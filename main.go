@@ -46,6 +46,50 @@ func loadTemplates(templatesDir string) multitemplate.Renderer {
 	return r
 }
 
+// generatePageNumbers generates a slice of page numbers for pagination
+// Returns a slice where -1 represents ellipsis
+func generatePageNumbers(currentPage, totalPages int64) []interface{} {
+	var pages []interface{}
+	if totalPages <= 7 {
+		// Show all pages if 7 or fewer
+		for i := int64(1); i <= totalPages; i++ {
+			pages = append(pages, i)
+		}
+	} else {
+		// Show first page
+		pages = append(pages, int64(1))
+
+		// Calculate start and end
+		start := currentPage - 2
+		if start < 2 {
+			start = 2
+		}
+		end := currentPage + 2
+		if end > totalPages-1 {
+			end = totalPages - 1
+		}
+
+		// Add ellipsis if needed
+		if start > 2 {
+			pages = append(pages, int64(-1)) // -1 means ellipsis
+		}
+
+		// Add pages around current
+		for i := start; i <= end; i++ {
+			pages = append(pages, i)
+		}
+
+		// Add ellipsis if needed
+		if end < totalPages-1 {
+			pages = append(pages, int64(-1)) // -1 means ellipsis
+		}
+
+		// Show last page
+		pages = append(pages, totalPages)
+	}
+	return pages
+}
+
 func main() {
 	// Load environment variables from .env file
 	LoadConfig()
@@ -276,12 +320,40 @@ func logout(c *gin.Context) {
 }
 
 func adminIndex(c *gin.Context) {
+	// Ensure page parameter is set to 1 if not provided or invalid
+	pageParam := c.DefaultQuery("page", "1")
+	if pageParam == "0" || pageParam == "" {
+		c.Redirect(http.StatusFound, "/admin/users?page=1")
+		return
+	}
+
 	var users []User
-	DB.Find(&users)
+	model := DB.Model(&User{}).Order("created_at DESC")
+	page := Paginator.With(model).Request(c.Request).Response(&users)
+
+	// Ensure page is at least 1, redirect if invalid
+	if page.Page < 1 {
+		c.Redirect(http.StatusFound, "/admin/users?page=1")
+		return
+	}
+
+	prevPage := page.Page - 1
+	if prevPage < 1 {
+		prevPage = 0 // 0 means no previous page
+	}
+
+	nextPage := page.Page + 1
+	if nextPage > page.TotalPages {
+		nextPage = 0 // 0 means no next page
+	}
 
 	data := gin.H{
-		"title": "User Management",
-		"users": users,
+		"title":    "User Management",
+		"users":    page.Items,
+		"page":     page,
+		"pages":    generatePageNumbers(page.Page, page.TotalPages),
+		"prevPage": prevPage,
+		"nextPage": nextPage,
 	}
 
 	// Add auth info
@@ -407,13 +479,41 @@ func deleteUser(c *gin.Context) {
 
 // Feed handlers
 func adminFeedsIndex(c *gin.Context) {
+	// Ensure page parameter is set to 1 if not provided or invalid
+	pageParam := c.DefaultQuery("page", "1")
+	if pageParam == "0" || pageParam == "" {
+		c.Redirect(http.StatusFound, "/admin/feeds?page=1")
+		return
+	}
+
 	var feeds []Feed
-	DB.Find(&feeds)
+	model := DB.Model(&Feed{}).Order("created_at DESC")
+	page := Paginator.With(model).Request(c.Request).Response(&feeds)
+
+	// Ensure page is at least 1, redirect if invalid
+	if page.Page < 1 {
+		c.Redirect(http.StatusFound, "/admin/feeds?page=1")
+		return
+	}
+
+	prevPage := page.Page - 1
+	if prevPage < 1 {
+		prevPage = 0 // 0 means no previous page
+	}
+
+	nextPage := page.Page + 1
+	if nextPage > page.TotalPages {
+		nextPage = 0 // 0 means no next page
+	}
 
 	session := sessions.Default(c)
 	data := addAuthToData(c, gin.H{
-		"title": "Feed Management",
-		"feeds": feeds,
+		"title":    "Feed Management",
+		"feeds":    page.Items,
+		"page":     page,
+		"pages":    generatePageNumbers(page.Page, page.TotalPages),
+		"prevPage": prevPage,
+		"nextPage": nextPage,
 	})
 
 	// Get flash messages
@@ -561,19 +661,57 @@ func seedFeeds(c *gin.Context) {
 // Item handlers
 func adminItemsIndex(c *gin.Context) {
 	var items []Item
-	query := DB.Preload("Feed")
+	model := DB.Model(&Item{}).Preload("Feed")
 
 	// Filter by feed if provided
 	if feedID := c.Query("feed_id"); feedID != "" {
-		query = query.Where("feed_id = ?", feedID)
+		model = model.Where("feed_id = ?", feedID)
 	}
 
-	query.Order("created_at DESC").Find(&items)
+	// Ensure page parameter is set to 1 if not provided or invalid
+	pageParam := c.DefaultQuery("page", "1")
+	if pageParam == "0" || pageParam == "" {
+		// Preserve feed_id if present
+		redirectURL := "/admin/items?page=1"
+		if feedID := c.Query("feed_id"); feedID != "" {
+			redirectURL += "&feed_id=" + feedID
+		}
+		c.Redirect(http.StatusFound, redirectURL)
+		return
+	}
+
+	model = model.Order("created_at DESC")
+	page := Paginator.With(model).Request(c.Request).Response(&items)
+
+	// Ensure page is at least 1, redirect if invalid
+	if page.Page < 1 {
+		// Preserve feed_id if present
+		redirectURL := "/admin/items?page=1"
+		if feedID := c.Query("feed_id"); feedID != "" {
+			redirectURL += "&feed_id=" + feedID
+		}
+		c.Redirect(http.StatusFound, redirectURL)
+		return
+	}
+
+	prevPage := page.Page - 1
+	if prevPage < 1 {
+		prevPage = 0 // 0 means no previous page
+	}
+
+	nextPage := page.Page + 1
+	if nextPage > page.TotalPages {
+		nextPage = 0 // 0 means no next page
+	}
 
 	session := sessions.Default(c)
 	data := addAuthToData(c, gin.H{
-		"title": "Items",
-		"items": items,
+		"title":    "Items",
+		"items":    page.Items,
+		"page":     page,
+		"pages":    generatePageNumbers(page.Page, page.TotalPages),
+		"prevPage": prevPage,
+		"nextPage": nextPage,
 	})
 
 	// Get flash messages
