@@ -81,6 +81,9 @@ func main() {
 	ConnectDatabase()
 	// Seed()
 
+	// Start background feed fetcher
+	go startBackgroundFeedFetcher()
+
 	r := gin.Default()
 
 	r.HTMLRender = loadTemplates("./templates")
@@ -571,23 +574,20 @@ func deleteAllItems(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/admin/items")
 }
 
-func fetchFeedItems(c *gin.Context) {
-	session := sessions.Default(c)
+// processFeeds fetches and processes all feeds, returns statistics
+func processFeeds() (itemsCreated, itemsUpdated, errors int) {
 	var feeds []Feed
 	DB.Find(&feeds)
 
 	if len(feeds) == 0 {
-		session.AddFlash(map[string]interface{}{"type": "error", "message": "No feeds available"})
-		session.Save()
-		c.Redirect(http.StatusFound, "/admin/items")
-		return
+		return 0, 0, 0
 	}
 
 	// Counters with mutex for thread safety
 	var mu sync.Mutex
-	itemsCreated := 0
-	itemsUpdated := 0
-	errors := 0
+	itemsCreated = 0
+	itemsUpdated = 0
+	errors = 0
 
 	// Worker pool: limit to 10 concurrent goroutines
 	const maxWorkers = 10
@@ -697,6 +697,23 @@ func fetchFeedItems(c *gin.Context) {
 	// Wait for all workers to finish
 	wg.Wait()
 
+	return itemsCreated, itemsUpdated, errors
+}
+
+func fetchFeedItems(c *gin.Context) {
+	session := sessions.Default(c)
+	var feeds []Feed
+	DB.Find(&feeds)
+
+	if len(feeds) == 0 {
+		session.AddFlash(map[string]interface{}{"type": "error", "message": "No feeds available"})
+		session.Save()
+		c.Redirect(http.StatusFound, "/admin/items")
+		return
+	}
+
+	itemsCreated, itemsUpdated, errors := processFeeds()
+
 	successMsg := fmt.Sprintf("Fetched items: %d created, %d updated", itemsCreated, itemsUpdated)
 	if errors > 0 {
 		successMsg += fmt.Sprintf(", %d errors", errors)
@@ -704,6 +721,24 @@ func fetchFeedItems(c *gin.Context) {
 	session.AddFlash(map[string]interface{}{"type": "success", "message": successMsg})
 	session.Save()
 	c.Redirect(http.StatusFound, "/admin/items")
+}
+
+// startBackgroundFeedFetcher starts a background goroutine that fetches feeds every 2 minutes
+func startBackgroundFeedFetcher() {
+	ticker := time.NewTicker(2 * time.Minute)
+	defer ticker.Stop()
+
+	// Fetch immediately on startup
+	log.Println("Starting background feed fetcher")
+	itemsCreated, itemsUpdated, errors := processFeeds()
+	log.Printf("Initial feed fetch completed: %d created, %d updated, %d errors", itemsCreated, itemsUpdated, errors)
+
+	// Then fetch every 2 minutes
+	for range ticker.C {
+		log.Println("Background feed fetch started")
+		itemsCreated, itemsUpdated, errors := processFeeds()
+		log.Printf("Background feed fetch completed: %d created, %d updated, %d errors", itemsCreated, itemsUpdated, errors)
+	}
 }
 
 func getItemContent(item *gofeed.Item) string {
