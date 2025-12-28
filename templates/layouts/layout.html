@@ -6,19 +6,22 @@
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
-    {{ if .isAuthenticated }}
     <nav class="admin-menu">
+        {{ if .isAuthenticated }}
         <a href="/admin/users">Users</a>
         <a href="/admin/feeds">Feeds</a>
         <a href="/admin/items">Items</a>
-        {{ if .isCypressMode }}
-        <a href="/tools">Tools</a>
-        {{ end }}
         <form action="/logout" method="post" style="display: inline;">
             <button type="submit">Logout</button>
         </form>
+        {{ else }}
+        <a href="/login">Login</a>
+        {{ end }}
+        {{ if .isCypressMode }}
+        <a href="/tools">Tools</a>
+        {{ end }}
     </nav>
-    {{ end }}
+    
 
     <h1>{{ .title }}</h1>
 
