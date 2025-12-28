@@ -140,5 +140,70 @@ describe('Feed Management', () => {
       cy.get('tbody tr').should('contain', testFeedUrl)
     })
   })
+
+  describe('Delete All Feeds', () => {
+    beforeEach(() => {
+      // Create some test feeds
+      const feedUrls = [
+        `https://example.com/deleteall1_${Date.now()}.xml`,
+        `https://example.com/deleteall2_${Date.now()}.xml`,
+        `https://example.com/deleteall3_${Date.now()}.xml`
+      ]
+      
+      feedUrls.forEach((feedUrl) => {
+        cy.visit('/admin/feeds/new')
+        cy.get('input[name="url"]').type(feedUrl)
+        cy.get('form[action="/admin/feeds"] button[type="submit"]').click()
+        cy.url().should('include', '/admin/feeds')
+      })
+    })
+
+    it('should display Delete All Feeds button', () => {
+      cy.visit('/admin/feeds')
+      cy.get('form[action="/admin/feeds/delete-all"]').should('be.visible')
+      cy.get('form[action="/admin/feeds/delete-all"] button').should('be.visible').should('contain', 'Delete All Feeds')
+    })
+
+    it('should delete all feeds when confirmed', () => {
+      cy.visit('/admin/feeds')
+      
+      // Get initial count of feeds
+      cy.get('tbody tr').then(($rows) => {
+        const initialCount = $rows.length
+        expect(initialCount).to.be.at.least(3)
+        
+        // Intercept the confirm dialog and accept it
+        cy.window().then((win) => {
+          cy.stub(win, 'confirm').returns(true)
+        })
+        
+        cy.get('form[action="/admin/feeds/delete-all"] button').click()
+        
+        cy.url().should('include', '/admin/feeds')
+        // All feeds should be deleted
+        cy.get('tbody tr').should('have.length', 0)
+      })
+    })
+
+    it('should not delete feeds when confirmation is rejected', () => {
+      cy.visit('/admin/feeds')
+      
+      // Count feeds before
+      cy.get('tbody tr').then(($rows) => {
+        const initialCount = $rows.length
+        expect(initialCount).to.be.at.least(3)
+        
+        // Intercept the confirm dialog and reject it
+        cy.window().then((win) => {
+          cy.stub(win, 'confirm').returns(false)
+        })
+        
+        cy.get('form[action="/admin/feeds/delete-all"] button').click()
+        
+        // Feeds should still exist
+        cy.get('tbody tr').should('have.length', initialCount)
+      })
+    })
+  })
 })
 
