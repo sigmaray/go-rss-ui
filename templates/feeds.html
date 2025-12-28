@@ -1,6 +1,16 @@
 {{ define "content" }}
-    <div style="margin-bottom: 20px;">
-        <a href="/admin/feeds/new">Create New Feed</a>
+    {{ if .success }}
+    <div class="success">{{ .success }}</div>
+    {{ end }}
+
+    <div class="feeds-actions">
+        <a href="/admin/feeds/new" class="btn-link">Create New Feed</a>
+        <form action="/admin/feeds/seed" method="post" class="inline-form">
+            <button type="submit">Seed Feeds</button>
+        </form>
+        <form action="/admin/feeds/delete-all" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to delete ALL feeds? This will also delete all associated items. This action cannot be undone.');">
+            <button type="submit" class="btn-danger">Delete All Feeds</button>
+        </form>
     </div>
 
     <h2>Feeds</h2>
