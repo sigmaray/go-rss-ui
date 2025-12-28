@@ -1,6 +1,9 @@
 describe('Feed Management', () => {
   beforeEach(() => {
     cy.loginRememberSession()
+    // Ensure we're on the admin page after login
+    cy.visit('/admin/feeds')
+    cy.url().should('include', '/admin/feeds')
   })
 
   describe('Feed List', () => {
@@ -26,19 +29,19 @@ describe('Feed Management', () => {
   describe('Create Feed', () => {
     it('should display create feed form', () => {
       cy.visit('/admin/feeds')
-      cy.get('a[href="/admin/feeds/new"]').click()
+      cy.get('a[href="/admin/feeds/new"]').first().click()
       cy.url().should('include', '/admin/feeds/new')
       cy.get('h1').contains('Create New Feed').should('be.visible')
       cy.get('input[name="url"]').should('be.visible')
-      cy.get('button[type="submit"]').should('be.visible').should('contain', 'Create Feed')
-      cy.get('a[href="/admin/feeds"]').should('be.visible').should('contain', 'Cancel')
+      cy.get('form[action="/admin/feeds"] button[type="submit"]').should('be.visible').should('contain', 'Create Feed')
+      cy.get('form[action="/admin/feeds"] a[href="/admin/feeds"]').should('be.visible').should('contain', 'Cancel')
     })
 
     it('should create a new feed successfully', () => {
       cy.visit('/admin/feeds/new')
       const feedUrl = `https://example.com/rss_${Date.now()}.xml`
       cy.get('input[name="url"]').type(feedUrl)
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action="/admin/feeds"] button[type="submit"]').click()
       
       cy.url().should('include', '/admin/feeds')
       cy.get('tbody tr').should('contain', feedUrl)
@@ -46,7 +49,7 @@ describe('Feed Management', () => {
 
     it('should show error when creating feed with empty URL', () => {
       cy.visit('/admin/feeds/new')
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action="/admin/feeds"] button[type="submit"]').click()
       
       // HTML5 validation should prevent submission
       cy.get('input[name="url"]:invalid').should('exist')
@@ -58,7 +61,7 @@ describe('Feed Management', () => {
       // Create first feed
       cy.visit('/admin/feeds/new')
       cy.get('input[name="url"]').type(feedUrl)
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action="/admin/feeds"] button[type="submit"]').click()
       cy.url().should('include', '/admin/feeds')
       
       // Verify feed was created
@@ -67,7 +70,7 @@ describe('Feed Management', () => {
       // Try to create duplicate
       cy.visit('/admin/feeds/new')
       cy.get('input[name="url"]').type(feedUrl)
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action="/admin/feeds"] button[type="submit"]').click()
       
       // Check result - if error handling works, error should be shown
       cy.url().then((url) => {
@@ -83,7 +86,7 @@ describe('Feed Management', () => {
 
     it('should cancel create feed and return to feeds list', () => {
       cy.visit('/admin/feeds/new')
-      cy.get('a[href="/admin/feeds"]').click()
+      cy.get('form[action="/admin/feeds"] a[href="/admin/feeds"]').first().click()
       cy.url().should('eq', 'http://localhost:8082/admin/feeds')
       cy.get('h1').contains('Feed Management').should('be.visible')
     })
@@ -98,7 +101,7 @@ describe('Feed Management', () => {
       testFeedUrl = `https://example.com/deletetest_${Date.now()}.xml`
       cy.visit('/admin/feeds/new')
       cy.get('input[name="url"]').type(testFeedUrl)
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action="/admin/feeds"] button[type="submit"]').click()
       
       // Get the feed ID from the table
       cy.visit('/admin/feeds')
