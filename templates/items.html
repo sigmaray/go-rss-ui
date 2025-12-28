@@ -1,8 +1,4 @@
 {{ define "content" }}
-    {{ if .success }}
-    <div class="success">{{ .success }}</div>
-    {{ end }}
-
     <div class="items-actions">
         <form action="/admin/items/fetch" method="post" class="inline-form">
             <button type="submit">Fetch Feed Items</button>

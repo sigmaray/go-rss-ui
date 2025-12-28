@@ -1,8 +1,4 @@
 {{ define "content" }}
-    {{ if .success }}
-    <div class="success">{{ .success }}</div>
-    {{ end }}
-
     <div class="feeds-actions">
         <a href="/admin/feeds/new" class="btn-link">Create New Feed</a>
         <form action="/admin/feeds/seed" method="post" class="inline-form">
