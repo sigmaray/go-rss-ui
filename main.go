@@ -27,6 +27,12 @@ func loadTemplates(templatesDir string) multitemplate.Renderer {
 		panic(err.Error())
 	}
 
+	// Load partials
+	partials, err := filepath.Glob(templatesDir + "/partials/*.html")
+	if err != nil {
+		panic(err.Error())
+	}
+
 	// includes, err := filepath.Glob(templatesDir + "/includes/*.html")
 	includes, err := filepath.Glob(templatesDir + "/*.html")
 	if err != nil {
@@ -40,7 +46,9 @@ func loadTemplates(templatesDir string) multitemplate.Renderer {
 		layoutCopy := make([]string, len(layouts))
 		copy(layoutCopy, layouts)
 		fmt.Println(layouts)
+		// Include partials in each template
 		files := append(layoutCopy, include)
+		files = append(files, partials...)
 		fmt.Println(files)
 		r.AddFromFiles(filepath.Base(include), files...)
 	}
@@ -329,7 +337,9 @@ func getTemplateData(c *gin.Context, data gin.H) gin.H {
 
 // addPaginationData adds pagination data (page, pages, prevPage, nextPage) to the data map
 // It extracts Page and TotalPages fields from the page object using reflection
-func addPaginationData(data gin.H, page interface{}) gin.H {
+// baseURL is the base URL for pagination links (e.g., "/admin/users")
+// entityName is the name of the entity for display (e.g., "users")
+func addPaginationData(data gin.H, page interface{}, baseURL, entityName string) gin.H {
 	if data == nil {
 		data = gin.H{}
 	}
@@ -389,6 +399,8 @@ func addPaginationData(data gin.H, page interface{}) gin.H {
 	data["pages"] = generatePageNumbers(pageNum, totalPages)
 	data["prevPage"] = prevPage
 	data["nextPage"] = nextPage
+	data["paginationBaseURL"] = baseURL
+	data["paginationEntityName"] = entityName
 
 	return data
 }
@@ -473,7 +485,7 @@ func adminIndex(c *gin.Context) {
 	}
 
 	// Add pagination data
-	data = addPaginationData(data, page)
+	data = addPaginationData(data, page, "/admin/users", "users")
 
 	// Check for error in query parameter (for backward compatibility)
 	if queryError := c.Query("error"); queryError != "" {
@@ -612,7 +624,7 @@ func adminFeedsIndex(c *gin.Context) {
 	}
 
 	// Add pagination data
-	data = addPaginationData(data, page)
+	data = addPaginationData(data, page, "/admin/feeds", "feeds")
 
 	data = getTemplateData(c, data)
 	c.HTML(http.StatusOK, "feeds.html", data)
@@ -786,7 +798,7 @@ func adminItemsIndex(c *gin.Context) {
 	}
 
 	// Add pagination data
-	data = addPaginationData(data, page)
+	data = addPaginationData(data, page, "/admin/items", "items")
 
 	data = getTemplateData(c, data)
 	c.HTML(http.StatusOK, "items.html", data)
