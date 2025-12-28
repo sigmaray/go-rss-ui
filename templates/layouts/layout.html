@@ -8,6 +8,9 @@
 <body>
     <nav class="admin-menu">
         {{ if .isAuthenticated }}
+        {{ if .isCypressMode }}
+        <a href="/tools">Tools</a>
+        {{ end }}
         <a href="/admin/users">Users</a>
         <a href="/admin/feeds">Feeds</a>
         <a href="/admin/items">Items</a>
@@ -15,11 +18,11 @@
             <button type="submit">Logout</button>
         </form>
         {{ else }}
-        <a href="/login">Login</a>
-        {{ end }}
         {{ if .isCypressMode }}
         <a href="/tools">Tools</a>
         {{ end }}
+        <a href="/login">Login</a>
+        {{ end }}        
     </nav>
     
 

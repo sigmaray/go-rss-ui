@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"time"
 
@@ -148,9 +149,9 @@ func main() {
 	r.Use(AddAuthInfo())
 
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{
+		c.HTML(http.StatusOK, "index.html", getTemplateData(c, gin.H{
 			"title": "My RSS App",
-		})
+		}))
 	})
 
 	admin := r.Group("/admin")
@@ -243,10 +244,12 @@ func AuthRequired() gin.HandlerFunc {
 	}
 }
 
-// AddAuthInfo adds authentication info to context for all requests
+// AddAuthInfo adds authentication info, flash messages, and CYPRESS mode to context for all requests
 func AddAuthInfo() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
+
+		// Handle authentication
 		userID := session.Get("user")
 		if userID != nil {
 			// Convert user ID to uint
@@ -257,39 +260,136 @@ func AddAuthInfo() gin.HandlerFunc {
 				userIDUint = uint(idFloat)
 			} else {
 				c.Set("isAuthenticated", false)
-				c.Next()
-				return
 			}
 
-			// Load user from database to get username
-			var user User
-			if err := DB.First(&user, userIDUint).Error; err == nil {
-				c.Set("isAuthenticated", true)
-				c.Set("username", user.Username)
-				c.Set("userID", userIDUint)
-			} else {
-				c.Set("isAuthenticated", false)
+			if userIDUint > 0 {
+				// Load user from database to get username
+				var user User
+				if err := DB.First(&user, userIDUint).Error; err == nil {
+					c.Set("isAuthenticated", true)
+					c.Set("username", user.Username)
+					c.Set("userID", userIDUint)
+				} else {
+					c.Set("isAuthenticated", false)
+				}
 			}
 		} else {
 			c.Set("isAuthenticated", false)
 		}
+
+		// Get flash messages and add to context
+		successMsg, errorMsg := getFlashMessages(session)
+		if successMsg != "" {
+			c.Set("success", successMsg)
+		}
+		if errorMsg != "" {
+			c.Set("error", errorMsg)
+		}
+		// Save session after reading flash messages
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session in AddAuthInfo: %v", err)
+		}
+
+		// Add CYPRESS mode info
+		c.Set("isCypressMode", IsCypressMode())
+
 		c.Next()
 	}
 }
 
-// addAuthToData adds authentication info and CYPRESS mode to template data
-func addAuthToData(c *gin.Context, data gin.H) gin.H {
+// getTemplateData collects all template data from context (auth, flash messages, CYPRESS mode)
+func getTemplateData(c *gin.Context, data gin.H) gin.H {
 	if data == nil {
 		data = gin.H{}
 	}
+
+	// Add authentication info
 	if isAuth, exists := c.Get("isAuthenticated"); exists {
 		data["isAuthenticated"] = isAuth
 	}
 	if username, exists := c.Get("username"); exists {
 		data["username"] = username
 	}
+
+	// Add flash messages
+	if success, exists := c.Get("success"); exists {
+		data["success"] = success
+	}
+	if error, exists := c.Get("error"); exists {
+		data["error"] = error
+	}
+
 	// Add CYPRESS mode info
-	data["isCypressMode"] = IsCypressMode()
+	if isCypressMode, exists := c.Get("isCypressMode"); exists {
+		data["isCypressMode"] = isCypressMode
+	}
+
+	return data
+}
+
+// addPaginationData adds pagination data (page, pages, prevPage, nextPage) to the data map
+// It extracts Page and TotalPages fields from the page object using reflection
+func addPaginationData(data gin.H, page interface{}) gin.H {
+	if data == nil {
+		data = gin.H{}
+	}
+
+	// Use reflection to access Page and TotalPages fields
+	v := reflect.ValueOf(page)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		// If not a struct, just add the page object
+		data["page"] = page
+		return data
+	}
+
+	// Get Page field
+	pageField := v.FieldByName("Page")
+	totalPagesField := v.FieldByName("TotalPages")
+
+	if !pageField.IsValid() || !totalPagesField.IsValid() {
+		// If fields don't exist, just add the page object
+		data["page"] = page
+		return data
+	}
+
+	// Convert to int64
+	var pageNum, totalPages int64
+	if pageField.Kind() == reflect.Int64 {
+		pageNum = pageField.Int()
+	} else if pageField.Kind() == reflect.Int {
+		pageNum = int64(pageField.Int())
+	}
+
+	if totalPagesField.Kind() == reflect.Int64 {
+		totalPages = totalPagesField.Int()
+	} else if totalPagesField.Kind() == reflect.Int {
+		totalPages = int64(totalPagesField.Int())
+	}
+
+	// Ensure page is at least 1
+	if pageNum < 1 {
+		pageNum = 1
+	}
+
+	prevPage := pageNum - 1
+	if prevPage < 1 {
+		prevPage = 0 // 0 means no previous page
+	}
+
+	nextPage := pageNum + 1
+	if nextPage > totalPages {
+		nextPage = 0 // 0 means no next page
+	}
+
+	data["page"] = page
+	data["pages"] = generatePageNumbers(pageNum, totalPages)
+	data["prevPage"] = prevPage
+	data["nextPage"] = nextPage
+
 	return data
 }
 
@@ -317,9 +417,9 @@ func getFlashMessages(session sessions.Session) (successMsg, errorMsg string) {
 }
 
 func showLogin(c *gin.Context) {
-	c.HTML(http.StatusOK, "login.html", gin.H{
+	c.HTML(http.StatusOK, "login.html", getTemplateData(c, gin.H{
 		"title": "Login",
-	})
+	}))
 }
 
 func login(c *gin.Context) {
@@ -367,59 +467,27 @@ func adminIndex(c *gin.Context) {
 	model := DB.Model(&User{}).Order("created_at DESC")
 	page := Paginator.With(model).Request(c.Request).Response(&users)
 
-	// Ensure page is at least 1
-	if page.Page < 1 {
-		page.Page = 1
-	}
-
-	prevPage := page.Page - 1
-	if prevPage < 1 {
-		prevPage = 0 // 0 means no previous page
-	}
-
-	nextPage := page.Page + 1
-	if nextPage > page.TotalPages {
-		nextPage = 0 // 0 means no next page
-	}
-
-	session := sessions.Default(c)
-
-	// Get flash messages BEFORE creating data to ensure they're preserved
-	successMsg, errorMsg := getFlashMessages(session)
-	if err := session.Save(); err != nil {
-		log.Printf("Error saving session in adminIndex: %v", err)
-	}
-
 	data := gin.H{
-		"title":    "User Management",
-		"users":    page.Items,
-		"page":     page,
-		"pages":    generatePageNumbers(page.Page, page.TotalPages),
-		"prevPage": prevPage,
-		"nextPage": nextPage,
+		"title": "User Management",
+		"users": page.Items,
 	}
 
-	// Add auth info
-	data = addAuthToData(c, data)
-
-	// Add flash messages to data
-	if successMsg != "" {
-		data["success"] = successMsg
-	}
-	if errorMsg != "" {
-		data["error"] = errorMsg
-	}
+	// Add pagination data
+	data = addPaginationData(data, page)
 
 	// Check for error in query parameter (for backward compatibility)
-	if queryError := c.Query("error"); queryError != "" && errorMsg == "" {
-		data["error"] = queryError
+	if queryError := c.Query("error"); queryError != "" {
+		if _, exists := c.Get("error"); !exists {
+			data["error"] = queryError
+		}
 	}
 
+	data = getTemplateData(c, data)
 	c.HTML(http.StatusOK, "users.html", data)
 }
 
 func showCreateUserForm(c *gin.Context) {
-	data := addAuthToData(c, gin.H{
+	data := getTemplateData(c, gin.H{
 		"title": "Create New User",
 	})
 	c.HTML(http.StatusOK, "create_user.html", data)
@@ -434,7 +502,7 @@ func showEditUserForm(c *gin.Context) {
 		return
 	}
 
-	data := addAuthToData(c, gin.H{
+	data := getTemplateData(c, gin.H{
 		"title": "Edit User",
 		"user":  user,
 	})
@@ -446,7 +514,7 @@ func createUser(c *gin.Context) {
 	password := c.PostForm("password")
 
 	if username == "" || password == "" {
-		data := addAuthToData(c, gin.H{
+		data := getTemplateData(c, gin.H{
 			"title": "Create New User",
 			"error": "Username and password are required",
 		})
@@ -456,7 +524,7 @@ func createUser(c *gin.Context) {
 
 	user := User{Username: username, Password: password}
 	if err := DB.Create(&user).Error; err != nil {
-		data := addAuthToData(c, gin.H{
+		data := getTemplateData(c, gin.H{
 			"title": "Create New User",
 			"error": "Failed to create user: " + err.Error(),
 		})
@@ -479,7 +547,7 @@ func editUser(c *gin.Context) {
 
 	var user User
 	if err := DB.First(&user, id).Error; err != nil {
-		data := addAuthToData(c, gin.H{
+		data := getTemplateData(c, gin.H{
 			"title": "Edit User",
 			"error": "User not found",
 			"user":  user,
@@ -496,7 +564,7 @@ func editUser(c *gin.Context) {
 	}
 
 	if err := DB.Save(&user).Error; err != nil {
-		data := addAuthToData(c, gin.H{
+		data := getTemplateData(c, gin.H{
 			"title": "Edit User",
 			"error": "Failed to update user: " + err.Error(),
 			"user":  user,
@@ -538,48 +606,20 @@ func adminFeedsIndex(c *gin.Context) {
 	model := DB.Model(&Feed{}).Order("created_at DESC")
 	page := Paginator.With(model).Request(c.Request).Response(&feeds)
 
-	// Ensure page is at least 1
-	if page.Page < 1 {
-		page.Page = 1
+	data := gin.H{
+		"title": "Feed Management",
+		"feeds": page.Items,
 	}
 
-	prevPage := page.Page - 1
-	if prevPage < 1 {
-		prevPage = 0 // 0 means no previous page
-	}
+	// Add pagination data
+	data = addPaginationData(data, page)
 
-	nextPage := page.Page + 1
-	if nextPage > page.TotalPages {
-		nextPage = 0 // 0 means no next page
-	}
-
-	session := sessions.Default(c)
-	data := addAuthToData(c, gin.H{
-		"title":    "Feed Management",
-		"feeds":    page.Items,
-		"page":     page,
-		"pages":    generatePageNumbers(page.Page, page.TotalPages),
-		"prevPage": prevPage,
-		"nextPage": nextPage,
-	})
-
-	// Get flash messages
-	successMsg, errorMsg := getFlashMessages(session)
-	if err := session.Save(); err != nil {
-		log.Printf("Error saving session in adminFeedsIndex: %v", err)
-	}
-	if successMsg != "" {
-		data["success"] = successMsg
-	}
-	if errorMsg != "" {
-		data["error"] = errorMsg
-	}
-
+	data = getTemplateData(c, data)
 	c.HTML(http.StatusOK, "feeds.html", data)
 }
 
 func showCreateFeedForm(c *gin.Context) {
-	data := addAuthToData(c, gin.H{
+	data := getTemplateData(c, gin.H{
 		"title": "Create New Feed",
 	})
 	c.HTML(http.StatusOK, "create_feed.html", data)
@@ -589,7 +629,7 @@ func createFeed(c *gin.Context) {
 	feedURL := c.PostForm("url")
 
 	if feedURL == "" {
-		data := addAuthToData(c, gin.H{
+		data := getTemplateData(c, gin.H{
 			"title": "Create New Feed",
 			"error": "URL is required",
 		})
@@ -599,7 +639,7 @@ func createFeed(c *gin.Context) {
 
 	feed := Feed{URL: feedURL}
 	if err := DB.Create(&feed).Error; err != nil {
-		data := addAuthToData(c, gin.H{
+		data := getTemplateData(c, gin.H{
 			"title": "Create New Feed",
 			"error": "Failed to create feed: " + err.Error(),
 		})
@@ -740,46 +780,15 @@ func adminItemsIndex(c *gin.Context) {
 	model = model.Order("created_at DESC")
 	page := Paginator.With(model).Request(c.Request).Response(&items)
 
-	// Ensure page is at least 1
-	if page.Page < 1 {
-		page.Page = 1
+	data := gin.H{
+		"title": "Items",
+		"items": page.Items,
 	}
 
-	prevPage := page.Page - 1
-	if prevPage < 1 {
-		prevPage = 0 // 0 means no previous page
-	}
+	// Add pagination data
+	data = addPaginationData(data, page)
 
-	nextPage := page.Page + 1
-	if nextPage > page.TotalPages {
-		nextPage = 0 // 0 means no next page
-	}
-
-	session := sessions.Default(c)
-
-	// Get flash messages BEFORE creating data to ensure they're preserved
-	successMsg, errorMsg := getFlashMessages(session)
-	if err := session.Save(); err != nil {
-		log.Printf("Error saving session in adminItemsIndex: %v", err)
-	}
-
-	data := addAuthToData(c, gin.H{
-		"title":    "Items",
-		"items":    page.Items,
-		"page":     page,
-		"pages":    generatePageNumbers(page.Page, page.TotalPages),
-		"prevPage": prevPage,
-		"nextPage": nextPage,
-	})
-
-	// Add flash messages to data
-	if successMsg != "" {
-		data["success"] = successMsg
-	}
-	if errorMsg != "" {
-		data["error"] = errorMsg
-	}
-
+	data = getTemplateData(c, data)
 	c.HTML(http.StatusOK, "items.html", data)
 }
 
@@ -792,7 +801,7 @@ func showItem(c *gin.Context) {
 		return
 	}
 
-	data := addAuthToData(c, gin.H{
+	data := getTemplateData(c, gin.H{
 		"title": item.Title,
 		"item":  item,
 	})
@@ -1032,7 +1041,7 @@ func showTools(c *gin.Context) {
 		return
 	}
 
-	data := addAuthToData(c, gin.H{
+	data := getTemplateData(c, gin.H{
 		"title": "Tools",
 	})
 	c.HTML(http.StatusOK, "tools.html", data)
