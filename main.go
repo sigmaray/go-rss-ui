@@ -273,6 +273,29 @@ func addAuthToData(c *gin.Context, data gin.H) gin.H {
 	return data
 }
 
+// Helper functions for flash messages using simple strings instead of maps
+func addFlashSuccess(session sessions.Session, message string) {
+	session.AddFlash("success:" + message)
+}
+
+func addFlashError(session sessions.Session, message string) {
+	session.AddFlash("error:" + message)
+}
+
+func getFlashMessages(session sessions.Session) (successMsg, errorMsg string) {
+	flashes := session.Flashes()
+	for _, flash := range flashes {
+		if flashStr, ok := flash.(string); ok {
+			if len(flashStr) > 8 && flashStr[:8] == "success:" {
+				successMsg = flashStr[8:]
+			} else if len(flashStr) > 6 && flashStr[:6] == "error:" {
+				errorMsg = flashStr[6:]
+			}
+		}
+	}
+	return successMsg, errorMsg
+}
+
 func showLogin(c *gin.Context) {
 	c.HTML(http.StatusOK, "login.html", gin.H{
 		"title": "Login",
@@ -501,20 +524,16 @@ func adminFeedsIndex(c *gin.Context) {
 	})
 
 	// Get flash messages
-	flashes := session.Flashes()
-	for _, flash := range flashes {
-		flashMap := flash.(map[string]interface{})
-		if msgType, ok := flashMap["type"].(string); ok {
-			if msg, ok := flashMap["message"].(string); ok {
-				if msgType == "error" {
-					data["error"] = msg
-				} else if msgType == "success" {
-					data["success"] = msg
-				}
-			}
-		}
+	successMsg, errorMsg := getFlashMessages(session)
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session in adminFeedsIndex: %v", err)
 	}
-	session.Save()
+	if successMsg != "" {
+		data["success"] = successMsg
+	}
+	if errorMsg != "" {
+		data["error"] = errorMsg
+	}
 
 	c.HTML(http.StatusOK, "feeds.html", data)
 }
@@ -577,7 +596,7 @@ func deleteAllFeeds(c *gin.Context) {
 	// Delete all items first (due to foreign key constraint)
 	result := DB.Delete(&Item{}, "1 = 1")
 	if result.Error != nil {
-		session.AddFlash(map[string]interface{}{"type": "error", "message": "Failed to delete items"})
+		addFlashError(session, "Failed to delete items")
 		session.Save()
 		c.Redirect(http.StatusFound, "/admin/feeds")
 		return
@@ -586,13 +605,13 @@ func deleteAllFeeds(c *gin.Context) {
 	// Delete all feeds
 	result = DB.Delete(&Feed{}, "1 = 1")
 	if result.Error != nil {
-		session.AddFlash(map[string]interface{}{"type": "error", "message": "Failed to delete all feeds"})
+		addFlashError(session, "Failed to delete all feeds")
 		session.Save()
 		c.Redirect(http.StatusFound, "/admin/feeds")
 		return
 	}
 
-	session.AddFlash(map[string]interface{}{"type": "success", "message": "All feeds deleted successfully"})
+	addFlashSuccess(session, "All feeds deleted successfully")
 	session.Save()
 	c.Redirect(http.StatusFound, "/admin/feeds")
 }
@@ -637,7 +656,7 @@ func seedFeeds(c *gin.Context) {
 		successMsg += fmt.Sprintf(", %d errors", errors)
 	}
 
-	session.AddFlash(map[string]interface{}{"type": "success", "message": successMsg})
+	addFlashSuccess(session, successMsg)
 	session.Save()
 	c.Redirect(http.StatusFound, "/admin/feeds")
 }
@@ -671,6 +690,13 @@ func adminItemsIndex(c *gin.Context) {
 	}
 
 	session := sessions.Default(c)
+
+	// Get flash messages BEFORE creating data to ensure they're preserved
+	successMsg, errorMsg := getFlashMessages(session)
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session in adminItemsIndex: %v", err)
+	}
+
 	data := addAuthToData(c, gin.H{
 		"title":    "Items",
 		"items":    page.Items,
@@ -680,21 +706,13 @@ func adminItemsIndex(c *gin.Context) {
 		"nextPage": nextPage,
 	})
 
-	// Get flash messages
-	flashes := session.Flashes()
-	for _, flash := range flashes {
-		flashMap := flash.(map[string]interface{})
-		if msgType, ok := flashMap["type"].(string); ok {
-			if msg, ok := flashMap["message"].(string); ok {
-				if msgType == "error" {
-					data["error"] = msg
-				} else if msgType == "success" {
-					data["success"] = msg
-				}
-			}
-		}
+	// Add flash messages to data
+	if successMsg != "" {
+		data["success"] = successMsg
 	}
-	session.Save()
+	if errorMsg != "" {
+		data["error"] = errorMsg
+	}
 
 	c.HTML(http.StatusOK, "items.html", data)
 }
@@ -719,12 +737,12 @@ func deleteAllItems(c *gin.Context) {
 	session := sessions.Default(c)
 	result := DB.Delete(&Item{}, "1 = 1")
 	if result.Error != nil {
-		session.AddFlash(map[string]interface{}{"type": "error", "message": "Failed to delete all items"})
+		addFlashError(session, "Failed to delete all items")
 		session.Save()
 		c.Redirect(http.StatusFound, "/admin/items")
 		return
 	}
-	session.AddFlash(map[string]interface{}{"type": "success", "message": "All items deleted successfully"})
+	addFlashSuccess(session, "All items deleted successfully")
 	session.Save()
 	c.Redirect(http.StatusFound, "/admin/items")
 }
@@ -871,7 +889,7 @@ func fetchFeedItems(c *gin.Context) {
 	DB.Find(&feeds)
 
 	if len(feeds) == 0 {
-		session.AddFlash(map[string]interface{}{"type": "error", "message": "No feeds available"})
+		addFlashError(session, "No feeds available")
 		session.Save()
 		c.Redirect(http.StatusFound, "/admin/items")
 		return
@@ -883,8 +901,10 @@ func fetchFeedItems(c *gin.Context) {
 	if errors > 0 {
 		successMsg += fmt.Sprintf(", %d errors", errors)
 	}
-	session.AddFlash(map[string]interface{}{"type": "success", "message": successMsg})
-	session.Save()
+	addFlashSuccess(session, successMsg)
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session in fetchFeedItems: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/admin/items")
 }
 
