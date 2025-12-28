@@ -362,6 +362,14 @@ func adminIndex(c *gin.Context) {
 		nextPage = 0 // 0 means no next page
 	}
 
+	session := sessions.Default(c)
+
+	// Get flash messages BEFORE creating data to ensure they're preserved
+	successMsg, errorMsg := getFlashMessages(session)
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session in adminIndex: %v", err)
+	}
+
 	data := gin.H{
 		"title":    "User Management",
 		"users":    page.Items,
@@ -374,9 +382,17 @@ func adminIndex(c *gin.Context) {
 	// Add auth info
 	data = addAuthToData(c, data)
 
-	// Check for error in query parameter
-	if errorMsg := c.Query("error"); errorMsg != "" {
+	// Add flash messages to data
+	if successMsg != "" {
+		data["success"] = successMsg
+	}
+	if errorMsg != "" {
 		data["error"] = errorMsg
+	}
+
+	// Check for error in query parameter (for backward compatibility)
+	if queryError := c.Query("error"); queryError != "" && errorMsg == "" {
+		data["error"] = queryError
 	}
 
 	c.HTML(http.StatusOK, "users.html", data)
@@ -428,6 +444,11 @@ func createUser(c *gin.Context) {
 		return
 	}
 
+	session := sessions.Default(c)
+	addFlashSuccess(session, "User created successfully")
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session in createUser: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/admin/users")
 }
 
@@ -469,26 +490,25 @@ func editUser(c *gin.Context) {
 
 func deleteUser(c *gin.Context) {
 	id := c.Param("id")
+	session := sessions.Default(c)
 
 	var user User
 	if err := DB.First(&user, id).Error; err != nil {
-		c.HTML(http.StatusNotFound, "users.html", gin.H{
-			"title": "User Management",
-			"error": "User not found",
-			"users": []User{},
-		})
+		addFlashError(session, "User not found")
+		session.Save()
+		c.Redirect(http.StatusFound, "/admin/users")
 		return
 	}
 
 	if err := DB.Delete(&user).Error; err != nil {
-		c.HTML(http.StatusInternalServerError, "users.html", gin.H{
-			"title": "User Management",
-			"error": "Failed to delete user: " + err.Error(),
-			"users": []User{},
-		})
+		addFlashError(session, "Failed to delete user: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/admin/users")
 		return
 	}
 
+	addFlashSuccess(session, "User deleted successfully")
+	session.Save()
 	c.Redirect(http.StatusFound, "/admin/users")
 }
 
@@ -567,15 +587,23 @@ func createFeed(c *gin.Context) {
 		return
 	}
 
+	session := sessions.Default(c)
+	addFlashSuccess(session, "Feed created successfully")
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session in createFeed: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/admin/feeds")
 }
 
 func deleteFeed(c *gin.Context) {
 	id := c.Param("id")
+	session := sessions.Default(c)
 
 	var feed Feed
 	if err := DB.First(&feed, id).Error; err != nil {
-		c.Redirect(http.StatusFound, "/admin/feeds?error=Feed+not+found")
+		addFlashError(session, "Feed not found")
+		session.Save()
+		c.Redirect(http.StatusFound, "/admin/feeds")
 		return
 	}
 
@@ -583,10 +611,14 @@ func deleteFeed(c *gin.Context) {
 	DB.Where("feed_id = ?", feed.ID).Delete(&Item{})
 
 	if err := DB.Delete(&feed).Error; err != nil {
-		c.Redirect(http.StatusFound, "/admin/feeds?error=Failed+to+delete+feed")
+		addFlashError(session, "Failed to delete feed: "+err.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/admin/feeds")
 		return
 	}
 
+	addFlashSuccess(session, "Feed deleted successfully")
+	session.Save()
 	c.Redirect(http.StatusFound, "/admin/feeds")
 }
 
