@@ -6,13 +6,13 @@ describe('User Management', () => {
   describe('Create User', () => {
     it('should display create user form', () => {
       cy.visit('/admin/users')
-      cy.get('a[href="/admin/users/new"]').should('be.visible').click()
+      cy.get('a[href="/admin/users/new"]').first().should('be.visible').click()
       cy.url().should('include', '/admin/users/new')
       cy.get('h1').contains('Create New User').should('be.visible')
       cy.get('input[name="username"]').should('be.visible')
       cy.get('input[name="password"]').should('be.visible')
-      cy.get('button[type="submit"]').should('be.visible').should('contain', 'Create User')
-      cy.get('a[href="/admin/users"]').should('be.visible').should('contain', 'Cancel')
+      cy.get('form[action="/admin/users"] button[type="submit"]').should('be.visible').should('contain', 'Create User')
+      cy.get('form[action="/admin/users"] a[href="/admin/users"]').should('be.visible').should('contain', 'Cancel')
     })
 
     it('should create a new user successfully', () => {
@@ -20,7 +20,7 @@ describe('User Management', () => {
       const username = `testuser_${Date.now()}`
       cy.get('input[name="username"]').type(username)
       cy.get('input[name="password"]').type('testpassword123')
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action="/admin/users"] button[type="submit"]').click()
       
       cy.url().should('include', '/admin/users')
       cy.get('tbody tr').should('contain', username)
@@ -29,7 +29,7 @@ describe('User Management', () => {
     it('should show error when creating user with empty username', () => {
       cy.visit('/admin/users/new')
       cy.get('input[name="password"]').type('testpassword123')
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action="/admin/users"] button[type="submit"]').click()
       
       // HTML5 validation should prevent submission, but if it goes through, check for error
       cy.get('input[name="username"]:invalid').should('exist')
@@ -38,7 +38,7 @@ describe('User Management', () => {
     it('should show error when creating user with empty password', () => {
       cy.visit('/admin/users/new')
       cy.get('input[name="username"]').type('testuser')
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action="/admin/users"] button[type="submit"]').click()
       
       // HTML5 validation should prevent submission
       cy.get('input[name="password"]:invalid').should('exist')
@@ -51,7 +51,7 @@ describe('User Management', () => {
       cy.visit('/admin/users/new')
       cy.get('input[name="username"]').type(username)
       cy.get('input[name="password"]').type('password1')
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action="/admin/users"] button[type="submit"]').click()
       cy.url().should('include', '/admin/users')
       
       // Verify user was created
@@ -61,7 +61,7 @@ describe('User Management', () => {
       cy.visit('/admin/users/new')
       cy.get('input[name="username"]').type(username)
       cy.get('input[name="password"]').type('password2')
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action="/admin/users"] button[type="submit"]').click()
       
       // Check result - if error handling works, error should be shown
       // If redirected, the app may have a bug with unique constraint
@@ -81,7 +81,7 @@ describe('User Management', () => {
 
     it('should cancel create user and return to users list', () => {
       cy.visit('/admin/users/new')
-      cy.get('a[href="/admin/users"]').click()
+      cy.get('form[action="/admin/users"] a[href="/admin/users"]').first().click()
       cy.url().should('eq', 'http://localhost:8082/admin/users')
       cy.get('h1').contains('User Management').should('be.visible')
     })
@@ -97,7 +97,7 @@ describe('User Management', () => {
       cy.visit('/admin/users/new')
       cy.get('input[name="username"]').type(testUsername)
       cy.get('input[name="password"]').type('originalpassword')
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action="/admin/users"] button[type="submit"]').click()
       
       // Get the user ID from the table
       cy.visit('/admin/users')
@@ -113,15 +113,15 @@ describe('User Management', () => {
       cy.get('h1').contains('Edit User').should('be.visible')
       cy.get('input[name="username"]').should('have.value', testUsername)
       cy.get('input[name="password"]').should('be.visible')
-      cy.get('button[type="submit"]').should('be.visible').should('contain', 'Update User')
-      cy.get('a[href="/admin/users"]').should('be.visible').should('contain', 'Cancel')
+      cy.get('form[action*="/edit"] button[type="submit"]').should('be.visible').should('contain', 'Update User')
+      cy.get('form[action*="/edit"] a[href="/admin/users"]').should('be.visible').should('contain', 'Cancel')
     })
 
     it('should update username successfully', () => {
       const newUsername = `updated_${Date.now()}`
       cy.visit(`/admin/users/${testUserId}/edit`)
       cy.get('input[name="username"]').clear().type(newUsername)
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action*="/edit"] button[type="submit"]').click()
       
       cy.url().should('include', '/admin/users')
       cy.get('tbody tr').should('contain', newUsername)
@@ -132,7 +132,7 @@ describe('User Management', () => {
       const newPassword = 'newpassword123'
       cy.visit(`/admin/users/${testUserId}/edit`)
       cy.get('input[name="password"]').type(newPassword)
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action*="/edit"] button[type="submit"]').click()
       
       cy.url().should('include', '/admin/users')
       cy.get('tbody tr').should('contain', testUsername)
@@ -149,7 +149,7 @@ describe('User Management', () => {
       cy.visit(`/admin/users/${testUserId}/edit`)
       cy.get('input[name="username"]').clear().type(newUsername)
       cy.get('input[name="password"]').type(newPassword)
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action*="/edit"] button[type="submit"]').click()
       
       cy.url().should('include', '/admin/users')
       cy.get('tbody tr').should('contain', newUsername)
@@ -166,7 +166,7 @@ describe('User Management', () => {
       cy.visit(`/admin/users/${testUserId}/edit`)
       cy.get('input[name="username"]').clear().type(newUsername)
       // Don't fill password field - leave it empty
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action*="/edit"] button[type="submit"]').click()
       
       cy.url().should('include', '/admin/users')
       
@@ -178,7 +178,7 @@ describe('User Management', () => {
 
     it('should cancel edit and return to users list', () => {
       cy.visit(`/admin/users/${testUserId}/edit`)
-      cy.get('a[href="/admin/users"]').click()
+      cy.get('form[action*="/edit"] a[href="/admin/users"]').first().click()
       cy.url().should('eq', 'http://localhost:8082/admin/users')
       cy.get('h1').contains('User Management').should('be.visible')
     })
@@ -200,7 +200,7 @@ describe('User Management', () => {
       cy.visit('/admin/users/new')
       cy.get('input[name="username"]').type(testUsername)
       cy.get('input[name="password"]').type('password123')
-      cy.get('button[type="submit"]').click()
+      cy.get('form[action="/admin/users"] button[type="submit"]').click()
       
       // Get the user ID from the table
       cy.visit('/admin/users')
