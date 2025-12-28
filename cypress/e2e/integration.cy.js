@@ -2,6 +2,19 @@ describe('Full Application Flow', () => {
   beforeEach(() => {
     cy.clearCookies()
     cy.clearLocalStorage()
+    // Setup database with admin user (done via cy.request since we're not using loginRememberSession)
+    cy.request({
+      method: 'POST',
+      url: '/tools/clear-database',
+      followRedirect: false,
+      failOnStatusCode: false
+    })
+    cy.request({
+      method: 'POST',
+      url: '/tools/seed-users',
+      followRedirect: false,
+      failOnStatusCode: false
+    })
   })
   it('should complete full user journey: home -> login -> admin -> logout', () => {
     // Start at home page
@@ -28,7 +41,7 @@ describe('Full Application Flow', () => {
     cy.get('tbody tr').contains('td', 'admin')
 
     // Logout
-    cy.get('form[action="/logout"] input[type="submit"]').click()
+    cy.get('form[action="/logout"] button[type="submit"]').click()
 
     // Should be back to home page
     cy.url().should('eq', 'http://localhost:8082/')

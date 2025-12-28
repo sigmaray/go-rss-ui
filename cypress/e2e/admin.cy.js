@@ -32,6 +32,6 @@ describe('Admin Panel', () => {
   it('should have logout button', () => {
     cy.visit('/admin')
     cy.get('form[action="/logout"]').should('be.visible')
-    cy.get('form[action="/logout"] input[type="submit"]').should('have.value', 'Logout')
+    cy.get('form[action="/logout"] button[type="submit"]').should('be.visible').should('contain', 'Logout')
   })
 })

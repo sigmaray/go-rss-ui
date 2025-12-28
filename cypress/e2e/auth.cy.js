@@ -3,6 +3,19 @@ describe('Authentication', () => {
     // Clear cookies to ensure clean session state
     cy.clearCookies()
     cy.clearLocalStorage()
+    // Setup database with admin user (done via cy.request since we're not logging in yet)
+    cy.request({
+      method: 'POST',
+      url: '/tools/clear-database',
+      followRedirect: false,
+      failOnStatusCode: false
+    })
+    cy.request({
+      method: 'POST',
+      url: '/tools/seed-users',
+      followRedirect: false,
+      failOnStatusCode: false
+    })
   })
 
   it('should redirect to login when accessing admin without authentication', () => {
