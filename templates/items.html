@@ -1,4 +1,17 @@
 {{ define "content" }}
+    {{ if .success }}
+    <div class="success">{{ .success }}</div>
+    {{ end }}
+
+    <div class="items-actions">
+        <form action="/admin/items/fetch" method="post" class="inline-form">
+            <button type="submit">Fetch Feed Items</button>
+        </form>
+        <form action="/admin/items/delete-all" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to delete ALL items? This action cannot be undone.');">
+            <button type="submit" class="btn-danger">Delete All Items</button>
+        </form>
+    </div>
+
     <h2>Items</h2>
     <table>
         <thead>

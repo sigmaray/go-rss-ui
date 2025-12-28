@@ -166,3 +166,23 @@ a:hover {
     background-color: #c82333;
 }
 
+/* Items actions */
+.items-actions {
+    margin-bottom: 20px;
+}
+
+.inline-form {
+    display: inline;
+    margin-right: 10px;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border: 1px solid #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+

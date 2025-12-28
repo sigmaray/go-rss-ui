@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"github.com/mmcdole/gofeed"
 )
 
 func loadTemplates(templatesDir string) multitemplate.Renderer {
@@ -115,6 +117,8 @@ func main() {
 		// Items routes
 		admin.GET("/items", adminItemsIndex)
 		admin.GET("/items/:id", showItem)
+		admin.POST("/items/fetch", fetchFeedItems)
+		admin.POST("/items/delete-all", deleteAllItems)
 	}
 
 	r.GET("/login", showLogin)
@@ -424,14 +428,27 @@ func adminItemsIndex(c *gin.Context) {
 
 	query.Order("created_at DESC").Find(&items)
 
+	session := sessions.Default(c)
 	data := addAuthToData(c, gin.H{
 		"title": "Items",
 		"items": items,
 	})
 
-	if errorMsg := c.Query("error"); errorMsg != "" {
-		data["error"] = errorMsg
+	// Get flash messages
+	flashes := session.Flashes()
+	for _, flash := range flashes {
+		flashMap := flash.(map[string]interface{})
+		if msgType, ok := flashMap["type"].(string); ok {
+			if msg, ok := flashMap["message"].(string); ok {
+				if msgType == "error" {
+					data["error"] = msg
+				} else if msgType == "success" {
+					data["success"] = msg
+				}
+			}
+		}
 	}
+	session.Save()
 
 	c.HTML(http.StatusOK, "items.html", data)
 }
@@ -450,4 +467,135 @@ func showItem(c *gin.Context) {
 		"item":  item,
 	})
 	c.HTML(http.StatusOK, "item.html", data)
+}
+
+func deleteAllItems(c *gin.Context) {
+	session := sessions.Default(c)
+	result := DB.Delete(&Item{}, "1 = 1")
+	if result.Error != nil {
+		session.AddFlash("Failed to delete all items", "error")
+		session.Save()
+		c.Redirect(http.StatusFound, "/admin/items")
+		return
+	}
+	session.AddFlash("All items deleted successfully", "success")
+	session.Save()
+	c.Redirect(http.StatusFound, "/admin/items")
+}
+
+func fetchFeedItems(c *gin.Context) {
+	session := sessions.Default(c)
+	var feeds []Feed
+	DB.Find(&feeds)
+
+	if len(feeds) == 0 {
+		session.AddFlash("No feeds available", "error")
+		session.Save()
+		c.Redirect(http.StatusFound, "/admin/items")
+		return
+	}
+
+	fp := gofeed.NewParser()
+	itemsCreated := 0
+	itemsUpdated := 0
+	errors := 0
+
+	for _, feed := range feeds {
+		parsedFeed, err := fp.ParseURL(feed.URL)
+		if err != nil {
+			log.Printf("Error parsing feed %s: %v", feed.URL, err)
+			errors++
+			continue
+		}
+
+		// Update feed title and description if available
+		if parsedFeed.Title != "" {
+			feed.Title = parsedFeed.Title
+		}
+		if parsedFeed.Description != "" {
+			feed.Description = parsedFeed.Description
+		}
+		DB.Save(&feed)
+
+		for _, item := range parsedFeed.Items {
+			// Determine GUID
+			guid := item.GUID
+			if guid == "" {
+				guid = item.Link
+			}
+
+			// Parse published date
+			var publishedAt *time.Time
+			if item.PublishedParsed != nil {
+				publishedAt = item.PublishedParsed
+			} else if item.UpdatedParsed != nil {
+				publishedAt = item.UpdatedParsed
+			}
+
+			// Check if item already exists by GUID
+			var existingItem Item
+			result := DB.Where("guid = ? AND feed_id = ?", guid, feed.ID).First(&existingItem)
+			
+			if result.Error != nil {
+				// Item doesn't exist, create it
+				newItem := Item{
+					FeedID:      feed.ID,
+					Title:       item.Title,
+					Link:        item.Link,
+					Description: item.Description,
+					Content:     getItemContent(item),
+					Author:      getItemAuthor(item),
+					PublishedAt: publishedAt,
+					GUID:        guid,
+				}
+				if err := DB.Create(&newItem).Error; err != nil {
+					log.Printf("Error creating item: %v", err)
+					errors++
+				} else {
+					itemsCreated++
+				}
+			} else {
+				// Item exists, update it
+				existingItem.Title = item.Title
+				existingItem.Link = item.Link
+				existingItem.Description = item.Description
+				existingItem.Content = getItemContent(item)
+				existingItem.Author = getItemAuthor(item)
+				if publishedAt != nil {
+					existingItem.PublishedAt = publishedAt
+				}
+				if err := DB.Save(&existingItem).Error; err != nil {
+					log.Printf("Error updating item: %v", err)
+					errors++
+				} else {
+					itemsUpdated++
+				}
+			}
+		}
+	}
+
+	successMsg := fmt.Sprintf("Fetched items: %d created, %d updated", itemsCreated, itemsUpdated)
+	if errors > 0 {
+		successMsg += fmt.Sprintf(", %d errors", errors)
+	}
+	session.AddFlash(successMsg, "success")
+	session.Save()
+	c.Redirect(http.StatusFound, "/admin/items")
+}
+
+func getItemContent(item *gofeed.Item) string {
+	if item.Content != "" {
+		return item.Content
+	}
+	return item.Description
+}
+
+func getItemAuthor(item *gofeed.Item) string {
+	if item.Author != nil && item.Author.Name != "" {
+		return item.Author.Name
+	}
+	if len(item.Authors) > 0 && item.Authors[0].Name != "" {
+		return item.Authors[0].Name
+	}
+	return ""
 }
