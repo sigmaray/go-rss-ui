@@ -81,6 +81,12 @@ func GetDefaultFeeds() []string {
 		"http://rss.cnn.com/rss/cnn_topstories.rss",
 		"https://www.wired.com/feed/rss",
 		"https://habr.com/ru/rss/articles/?fl=ru",
+		"https://www.telegraph.co.uk/rss.xml",
+		"https://abcnews.go.com/abcnews/topstories",
+		"https://feeds.content.dowjones.io/public/rss/RSSWorldNews",
+		"https://feeds.skynews.com/feeds/rss/home.xml",
+		"https://www.theguardian.com/international/rss",
+		"https://feeds.nbcnews.com/nbcnews/public/news",
 	}
 }
 
