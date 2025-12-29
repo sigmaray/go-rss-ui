@@ -87,6 +87,7 @@ func GetDefaultFeeds() []string {
 		"https://feeds.skynews.com/feeds/rss/home.xml",
 		"https://www.theguardian.com/international/rss",
 		"https://feeds.nbcnews.com/nbcnews/public/news",
+		"https://www.theguardian.com/world/rss",
 	}
 }
 
