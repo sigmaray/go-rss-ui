@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -65,6 +66,20 @@ func getLogEntries() []LogEntry {
 	entries := make([]LogEntry, len(logEntries))
 	copy(entries, logEntries)
 	return entries
+}
+
+// isUniqueConstraintError checks if the error is a unique constraint violation
+func isUniqueConstraintError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := strings.ToLower(err.Error())
+	// Check for PostgreSQL unique constraint violation
+	// PostgreSQL error code 23505 is "unique_violation"
+	return strings.Contains(errStr, "duplicate key") ||
+		strings.Contains(errStr, "unique constraint") ||
+		strings.Contains(errStr, "23505") ||
+		strings.Contains(errStr, "unique constraint failed")
 }
 
 func loadTemplates(templatesDir string) multitemplate.Renderer {
@@ -585,8 +600,29 @@ func createUser(c *gin.Context) {
 		return
 	}
 
+	// Check if username already exists
+	var existingUser User
+	if err := DB.Where("username = ?", username).First(&existingUser).Error; err == nil {
+		// User with this username already exists
+		data := getTemplateData(c, gin.H{
+			"title": "Create New User",
+			"error": "Username already exists",
+		})
+		c.HTML(http.StatusBadRequest, "create_user.html", data)
+		return
+	}
+
 	user := User{Username: username, Password: password}
 	if err := DB.Create(&user).Error; err != nil {
+		// Check if error is due to unique constraint violation
+		if isUniqueConstraintError(err) {
+			data := getTemplateData(c, gin.H{
+				"title": "Create New User",
+				"error": "Username already exists",
+			})
+			c.HTML(http.StatusBadRequest, "create_user.html", data)
+			return
+		}
 		data := getTemplateData(c, gin.H{
 			"title": "Create New User",
 			"error": "Failed to create user: " + err.Error(),
@@ -620,6 +656,18 @@ func editUser(c *gin.Context) {
 	}
 
 	if username != "" {
+		// Check if new username is already taken by another user
+		var existingUser User
+		if err := DB.Where("username = ? AND id != ?", username, id).First(&existingUser).Error; err == nil {
+			// Username is already taken by another user
+			data := getTemplateData(c, gin.H{
+				"title": "Edit User",
+				"error": "Username already exists",
+				"user":  user,
+			})
+			c.HTML(http.StatusBadRequest, "edit_user.html", data)
+			return
+		}
 		user.Username = username
 	}
 	if password != "" {
@@ -627,6 +675,16 @@ func editUser(c *gin.Context) {
 	}
 
 	if err := DB.Save(&user).Error; err != nil {
+		// Check if error is due to unique constraint violation
+		if isUniqueConstraintError(err) {
+			data := getTemplateData(c, gin.H{
+				"title": "Edit User",
+				"error": "Username already exists",
+				"user":  user,
+			})
+			c.HTML(http.StatusBadRequest, "edit_user.html", data)
+			return
+		}
 		data := getTemplateData(c, gin.H{
 			"title": "Edit User",
 			"error": "Failed to update user: " + err.Error(),
@@ -651,7 +709,7 @@ func deleteUser(c *gin.Context) {
 		return
 	}
 
-	if err := DB.Delete(&user).Error; err != nil {
+	if err := DB.Unscoped().Delete(&user).Error; err != nil {
 		addFlashError(session, "Failed to delete user: "+err.Error())
 		session.Save()
 		c.Redirect(http.StatusFound, "/admin/users")

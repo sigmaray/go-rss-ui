@@ -77,6 +77,7 @@ func SeedFeeds() {
 		"https://feeds.bbci.co.uk/news/rss.xml",
 		"http://rss.cnn.com/rss/cnn_topstories.rss",
 		"https://www.wired.com/feed/rss",
+		"https://habr.com/ru/rss/articles/?fl=ru",
 	}
 
 	for _, feedURL := range defaultFeeds {
