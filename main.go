@@ -971,8 +971,10 @@ func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, error
 				feed.LastError = ""
 				feed.LastErrorAt = nil
 				DB.Save(&feed)
-				// Add success log entry
-				addLogEntry("success", feed.URL, fmt.Sprintf("Successfully fetched feed: %d items processed", len(parsedFeed.Items)))
+
+				// Local counters for this feed
+				feedCreated := 0
+				feedUpdated := 0
 
 				// Process items for this feed
 				for _, item := range parsedFeed.Items {
@@ -1012,6 +1014,7 @@ func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, error
 							errors++
 							mu.Unlock()
 						} else {
+							feedCreated++
 							mu.Lock()
 							itemsCreated++
 							mu.Unlock()
@@ -1032,12 +1035,16 @@ func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, error
 							errors++
 							mu.Unlock()
 						} else {
+							feedUpdated++
 							mu.Lock()
 							itemsUpdated++
 							mu.Unlock()
 						}
 					}
 				}
+
+				// Add success log entry with created and updated counts
+				addLogEntry("success", feed.URL, fmt.Sprintf("Successfully fetched feed: %d created, %d updated", feedCreated, feedUpdated))
 			}
 		}()
 	}
