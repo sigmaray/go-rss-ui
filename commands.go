@@ -195,3 +195,12 @@ func CommandCreateDB() {
 
 	log.Printf("Database '%s' created successfully", dbname)
 }
+
+// CommandFetchFeeds fetches all RSS feeds and processes their items
+func CommandFetchFeeds() {
+	ConnectDatabase()
+
+	log.Println("Starting feed fetch...")
+	itemsCreated, itemsUpdated, errors := processAllFeeds()
+	log.Printf("Feed fetch completed: %d items created, %d items updated, %d errors", itemsCreated, itemsUpdated, errors)
+}
