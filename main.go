@@ -20,6 +20,53 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// LogEntry represents a single log entry
+type LogEntry struct {
+	Timestamp time.Time
+	Type      string // "success" or "error"
+	FeedURL   string
+	Message   string
+}
+
+// In-memory log storage with max 1000 entries
+var (
+	logEntries []LogEntry
+	logMutex   sync.RWMutex
+	maxLogSize = 1000
+)
+
+// addLogEntry adds a log entry to the in-memory log storage
+// Maintains maximum of 1000 entries by removing oldest entries
+func addLogEntry(logType, feedURL, message string) {
+	logMutex.Lock()
+	defer logMutex.Unlock()
+
+	entry := LogEntry{
+		Timestamp: time.Now(),
+		Type:      logType,
+		FeedURL:   feedURL,
+		Message:   message,
+	}
+
+	logEntries = append(logEntries, entry)
+
+	// Keep only the last maxLogSize entries
+	if len(logEntries) > maxLogSize {
+		logEntries = logEntries[len(logEntries)-maxLogSize:]
+	}
+}
+
+// getLogEntries returns a copy of all log entries
+func getLogEntries() []LogEntry {
+	logMutex.RLock()
+	defer logMutex.RUnlock()
+
+	// Return a copy to prevent external modifications
+	entries := make([]LogEntry, len(logEntries))
+	copy(entries, logEntries)
+	return entries
+}
+
 func loadTemplates(templatesDir string) multitemplate.Renderer {
 	r := multitemplate.NewRenderer()
 
@@ -194,6 +241,9 @@ func main() {
 	r.GET("/login", showLogin)
 	r.POST("/login", login)
 	r.POST("/logout", logout)
+
+	// Logs route (requires authentication)
+	r.GET("/logs", AuthRequired(), showLogs)
 
 	// Tools routes (only available when CYPRESS=true)
 	if IsCypressMode() {
@@ -801,6 +851,20 @@ func adminItemsIndex(c *gin.Context) {
 	c.HTML(http.StatusOK, "items.html", data)
 }
 
+func showLogs(c *gin.Context) {
+	entries := getLogEntries()
+	// Reverse order to show newest first
+	for i, j := 0, len(entries)-1; i < j; i, j = i+1, j-1 {
+		entries[i], entries[j] = entries[j], entries[i]
+	}
+
+	data := getTemplateData(c, gin.H{
+		"title":   "Logs",
+		"entries": entries,
+	})
+	c.HTML(http.StatusOK, "logs.html", data)
+}
+
 func showItem(c *gin.Context) {
 	id := c.Param("id")
 
@@ -886,6 +950,8 @@ func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, error
 					feed.LastError = err.Error()
 					feed.LastErrorAt = &now
 					DB.Save(&feed)
+					// Add error log entry
+					addLogEntry("error", feed.URL, fmt.Sprintf("Failed to fetch feed: %v", err))
 					mu.Lock()
 					errors++
 					mu.Unlock()
@@ -905,6 +971,8 @@ func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, error
 				feed.LastError = ""
 				feed.LastErrorAt = nil
 				DB.Save(&feed)
+				// Add success log entry
+				addLogEntry("success", feed.URL, fmt.Sprintf("Successfully fetched feed: %d items processed", len(parsedFeed.Items)))
 
 				// Process items for this feed
 				for _, item := range parsedFeed.Items {
