@@ -859,41 +859,15 @@ func seedFeeds(c *gin.Context) {
 
 	session := sessions.Default(c)
 
-	defaultFeeds := []string{
-		"https://feeds.bbci.co.uk/news/rss.xml",
-		"http://rss.cnn.com/rss/cnn_topstories.rss",
-		"https://www.wired.com/feed/rss",
-	}
+	// Use the unified SeedFeeds function
+	result := SeedFeeds()
 
-	feedsCreated := 0
-	feedsExisted := 0
-	errors := 0
-
-	for _, feedURL := range defaultFeeds {
-		var feed Feed
-		result := DB.Where("url = ?", feedURL).First(&feed)
-		if result.Error == gorm.ErrRecordNotFound {
-			feed := Feed{URL: feedURL}
-			if err := DB.Create(&feed).Error; err != nil {
-				log.Printf("Failed to create feed %s: %v", feedURL, err)
-				errors++
-			} else {
-				feedsCreated++
-			}
-		} else if result.Error != nil {
-			log.Printf("Failed to check for existing feed %s: %v", feedURL, result.Error)
-			errors++
-		} else {
-			feedsExisted++
-		}
+	successMsg := fmt.Sprintf("Seeded feeds: %d created", result.Created)
+	if result.Existed > 0 {
+		successMsg += fmt.Sprintf(", %d already existed", result.Existed)
 	}
-
-	successMsg := fmt.Sprintf("Seeded feeds: %d created", feedsCreated)
-	if feedsExisted > 0 {
-		successMsg += fmt.Sprintf(", %d already existed", feedsExisted)
-	}
-	if errors > 0 {
-		successMsg += fmt.Sprintf(", %d errors", errors)
+	if result.Errors > 0 {
+		successMsg += fmt.Sprintf(", %d errors", result.Errors)
 	}
 
 	addFlashSuccess(session, successMsg)

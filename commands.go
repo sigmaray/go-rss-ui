@@ -49,7 +49,8 @@ func CommandSeedUsers() {
 // CommandSeedFeeds creates default RSS feeds
 func CommandSeedFeeds() {
 	ConnectDatabase()
-	SeedFeeds()
+	result := SeedFeeds()
+	log.Printf("Seeded feeds: %d created, %d already existed, %d errors", result.Created, result.Existed, result.Errors)
 }
 
 // SeedUsers creates admin user if it doesn't exist
@@ -70,32 +71,56 @@ func SeedUsers() {
 	}
 }
 
-// SeedFeeds creates default RSS feeds if they don't exist
-func SeedFeeds() {
-	// Seed default feeds
-	defaultFeeds := []string{
+// GetDefaultFeeds returns the list of default RSS feeds to seed
+func GetDefaultFeeds() []string {
+	return []string{
 		"https://feeds.bbci.co.uk/news/rss.xml",
 		"http://rss.cnn.com/rss/cnn_topstories.rss",
 		"https://www.wired.com/feed/rss",
 		"https://habr.com/ru/rss/articles/?fl=ru",
 	}
+}
 
-	for _, feedURL := range defaultFeeds {
+// SeedFeedsResult contains the results of seeding feeds
+type SeedFeedsResult struct {
+	Created int
+	Existed int
+	Errors  int
+}
+
+// SeedFeeds creates default RSS feeds if they don't exist
+// Returns statistics about the operation
+func SeedFeeds() SeedFeedsResult {
+	return SeedFeedsWithURLs(GetDefaultFeeds())
+}
+
+// SeedFeedsWithURLs creates RSS feeds from the provided URLs if they don't exist
+// Returns statistics about the operation
+func SeedFeedsWithURLs(feedURLs []string) SeedFeedsResult {
+	result := SeedFeedsResult{}
+
+	for _, feedURL := range feedURLs {
 		var feed Feed
-		result := DB.Where("url = ?", feedURL).First(&feed)
-		if result.Error == gorm.ErrRecordNotFound {
+		dbResult := DB.Where("url = ?", feedURL).First(&feed)
+		if dbResult.Error == gorm.ErrRecordNotFound {
 			feed := Feed{URL: feedURL}
 			if err := DB.Create(&feed).Error; err != nil {
 				log.Printf("Failed to create feed %s: %v", feedURL, err)
+				result.Errors++
 			} else {
 				log.Printf("Feed created: %s", feedURL)
+				result.Created++
 			}
-		} else if result.Error != nil {
-			log.Printf("Failed to check for existing feed %s: %v", feedURL, result.Error)
+		} else if dbResult.Error != nil {
+			log.Printf("Failed to check for existing feed %s: %v", feedURL, dbResult.Error)
+			result.Errors++
 		} else {
 			log.Printf("Feed already exists: %s", feedURL)
+			result.Existed++
 		}
 	}
+
+	return result
 }
 
 // CommandMigrate creates tables in the database using AutoMigrate
