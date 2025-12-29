@@ -1,5 +1,5 @@
 {{ define "content" }}
-    <div style="margin-bottom: 20px;">
+    <div class="item-detail-section">
         <a href="/admin/items">Back to Items</a>
     </div>
 
@@ -8,43 +8,43 @@
     {{ else }}
     <h2>{{ .item.Title }}</h2>
     
-    <div style="margin-bottom: 10px;">
+    <div class="item-detail-field">
         <strong>Feed:</strong> {{ if .item.Feed }}{{ .item.Feed.URL }}{{ else }}N/A{{ end }}
     </div>
     
     {{ if .item.Link }}
-    <div style="margin-bottom: 10px;">
+    <div class="item-detail-field">
         <strong>Link:</strong> <a href="{{ .item.Link }}" target="_blank">{{ .item.Link }}</a>
     </div>
     {{ end }}
     
     {{ if .item.Author }}
-    <div style="margin-bottom: 10px;">
+    <div class="item-detail-field">
         <strong>Author:</strong> {{ .item.Author }}
     </div>
     {{ end }}
     
     {{ if .item.PublishedAt }}
-    <div style="margin-bottom: 10px;">
+    <div class="item-detail-field">
         <strong>Published At:</strong> {{ .item.PublishedAt.Format "2006-01-02 15:04:05" }}
     </div>
     {{ end }}
     
     {{ if .item.Description }}
-    <div style="margin-bottom: 10px;">
+    <div class="item-detail-field">
         <strong>Description:</strong>
-        <div style="margin-top: 5px;">{{ .item.Description }}</div>
+        <div class="item-detail-field-content">{{ .item.Description }}</div>
     </div>
     {{ end }}
     
     {{ if .item.Content }}
-    <div style="margin-bottom: 10px;">
+    <div class="item-detail-field">
         <strong>Content:</strong>
-        <div style="margin-top: 5px;">{{ .item.Content }}</div>
+        <div class="item-detail-field-content">{{ .item.Content }}</div>
     </div>
     {{ end }}
     
-    <div style="margin-top: 20px;">
+    <div class="item-detail-actions">
         <a href="/admin/items">Back to Items</a>
     </div>
     {{ end }}

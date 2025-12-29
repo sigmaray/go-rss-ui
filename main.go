@@ -511,18 +511,18 @@ func login(c *gin.Context) {
 	var user User
 	result := DB.Where("username = ?", username).First(&user)
 	if result.Error != nil {
-		c.HTML(http.StatusUnauthorized, "login.html", gin.H{
+		c.HTML(http.StatusUnauthorized, "login.html", getTemplateData(c, gin.H{
 			"title":   "Login",
 			"message": "Invalid credentials",
-		})
+		}))
 		return
 	}
 
 	if !user.CheckPassword(password) {
-		c.HTML(http.StatusUnauthorized, "login.html", gin.H{
+		c.HTML(http.StatusUnauthorized, "login.html", getTemplateData(c, gin.H{
 			"title":   "Login",
 			"message": "Invalid credentials",
-		})
+		}))
 		return
 	}
 
