@@ -1,6 +1,7 @@
 describe('Test Feeds Fetch', () => {
   beforeEach(() => {
-    cy.loginRememberSession()
+    cy.clearUsersLoginRememberSession()
+    cy.clearTable('feeds')
     // Ensure we're logged in before each test
     cy.visit('/admin/feeds')
     cy.url().should('include', '/admin/feeds')
@@ -63,17 +64,17 @@ describe('Test Feeds Fetch', () => {
     
     // Check Database Statistics section
     cy.get('h3').contains('Database Statistics').should('be.visible')
-    
-    // // Verify Total Feeds count (should be 2)
-    // cy.contains('td', 'Total Feeds:').parent('tr').within(() => {
-    //   cy.get('td').eq(1).should('contain', '2')
-    // })
+        
+    // Verify Total Feeds count (should be 2)
+    cy.contains('td', 'Total Feeds:').parent('tr').within(() => {
+      cy.get('td').eq(1).should('contain', '2')
+    })
     
     // Verify Total Items count (should be at least 5)
     cy.contains('td', 'Total Items:').parent('tr').within(() => {
       cy.get('td').eq(1).invoke('text').then((text) => {
         const itemsCount = parseInt(text.trim())
-        expect(itemsCount).to.be.at.least(5)
+        expect(itemsCount).to.eq(5)
       })
     })
     

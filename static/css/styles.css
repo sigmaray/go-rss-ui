@@ -321,6 +321,22 @@ a:hover {
     overflow-x: auto;
 }
 
+/* Tools page additional styles */
+.tool-item h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1em;
+    color: #333;
+}
+
+.tool-item select {
+    padding: 6px 10px;
+    margin-right: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
 /* Info page styles */
 .info-container {
     max-width: 1000px;

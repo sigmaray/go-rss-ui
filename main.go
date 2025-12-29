@@ -306,7 +306,8 @@ func main() {
 	if IsCypressMode() {
 		tools := r.Group("/tools")
 		tools.GET("", showTools)
-		tools.POST("/clear-database", clearDatabase)
+		tools.POST("/clear-all-tables", clearAllTables)
+		tools.POST("/clear-table", clearTable)
 		tools.POST("/seed-users", seedUsers)
 		tools.POST("/seed-feeds", seedFeeds)
 		tools.POST("/drop-db", dropDB)
@@ -1492,7 +1493,7 @@ func showTools(c *gin.Context) {
 	c.HTML(http.StatusOK, "tools.html", data)
 }
 
-func clearDatabase(c *gin.Context) {
+func clearAllTables(c *gin.Context) {
 	if !IsCypressMode() {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Tools are only available when CYPRESS=true"})
 		return
@@ -1522,7 +1523,67 @@ func clearDatabase(c *gin.Context) {
 		return
 	}
 
-	addFlashSuccess(session, "Database cleared successfully")
+	addFlashSuccess(session, "All tables cleared successfully")
+	session.Save()
+	c.Redirect(http.StatusFound, "/tools")
+}
+
+func clearTable(c *gin.Context) {
+	if !IsCypressMode() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Tools are only available when CYPRESS=true"})
+		return
+	}
+
+	session := sessions.Default(c)
+	tableName := c.PostForm("name")
+
+	if tableName == "" {
+		addFlashError(session, "Table name is required")
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	// Validate table name to prevent SQL injection
+	validTables := map[string]bool{
+		"users": true,
+		"feeds": true,
+		"items": true,
+	}
+
+	if !validTables[strings.ToLower(tableName)] {
+		addFlashError(session, "Invalid table name. Allowed tables: users, feeds, items")
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	// Clear the specified table
+	// Use parameterized query to prevent SQL injection
+	tableNameLower := strings.ToLower(tableName)
+	var sqlQuery string
+	switch tableNameLower {
+	case "users":
+		sqlQuery = "TRUNCATE TABLE users CASCADE"
+	case "feeds":
+		sqlQuery = "TRUNCATE TABLE feeds CASCADE"
+	case "items":
+		sqlQuery = "TRUNCATE TABLE items CASCADE"
+	default:
+		addFlashError(session, "Invalid table name")
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	if err := DB.Exec(sqlQuery).Error; err != nil {
+		addFlashError(session, fmt.Sprintf("Failed to clear table %s: %s", tableName, err.Error()))
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	addFlashSuccess(session, fmt.Sprintf("Table '%s' cleared successfully", tableName))
 	session.Save()
 	c.Redirect(http.StatusFound, "/tools")
 }

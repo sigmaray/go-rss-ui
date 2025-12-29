@@ -6,10 +6,24 @@
         <h3>Database Operations</h3>
         
         <div class="tool-item">
-            <form action="/tools/clear-database" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to clear ALL tables? This action cannot be undone.');">
-                <button type="submit" class="btn-danger">Clear Database</button>
+            <form action="/tools/clear-all-tables" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to clear ALL tables? This action cannot be undone.');">
+                <button type="submit" class="btn-danger">Clear All Tables</button>
             </form>
             <p class="tool-description">Clears all tables (users, feeds, items)</p>
+        </div>
+
+        <div class="tool-item">
+            <h4>Clear Individual Table</h4>
+            <form action="/tools/clear-table" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to clear this table? This action cannot be undone.');">
+                <select name="name" required>
+                    <option value="">Select table...</option>
+                    <option value="users">users</option>
+                    <option value="feeds">feeds</option>
+                    <option value="items">items</option>
+                </select>
+                <button type="submit" class="btn-danger">Clear Table</button>
+            </form>
+            <p class="tool-description">Clears a specific table (users, feeds, or items)</p>
         </div>
 
         <div class="tool-item">

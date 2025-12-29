@@ -158,7 +158,8 @@ The application supports several CLI commands:
 
 #### Tools (Cypress Mode Only)
 - `GET /tools` - Tools page (only when `CYPRESS=true`)
-- `POST /tools/clear-database` - Clear all database tables
+- `POST /tools/clear-all-tables` - Clear all database tables
+- `POST /tools/clear-table` - Clear a specific table (requires `name` parameter: users, feeds, or items)
 - `POST /tools/seed-users` - Seed users
 - `POST /tools/seed-feeds` - Seed feeds
 - `POST /tools/migrate` - Run migrations

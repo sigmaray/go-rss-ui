@@ -1,6 +1,6 @@
 describe('Items Management', () => {
   beforeEach(() => {
-    cy.loginRememberSession()
+    cy.clearUsersLoginRememberSession()
   })
 
   describe('Items List', () => {

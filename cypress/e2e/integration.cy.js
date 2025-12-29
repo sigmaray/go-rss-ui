@@ -2,10 +2,10 @@ describe('Full Application Flow', () => {
   beforeEach(() => {
     cy.clearCookies()
     cy.clearLocalStorage()
-    // Setup database with admin user (done via cy.request since we're not using loginRememberSession)
+    // Setup database with admin user (done via cy.request since we're not using clearUsersLoginRememberSession)
     cy.request({
       method: 'POST',
-      url: '/tools/clear-database',
+      url: '/tools/clear-all-tables',
       followRedirect: false,
       failOnStatusCode: false
     })

@@ -1,6 +1,6 @@
 describe('Feed Management', () => {
   beforeEach(() => {
-    cy.loginRememberSession()
+    cy.clearUsersLoginRememberSession()
     // Ensure we're on the admin page after login
     cy.visit('/admin/feeds')
     cy.url().should('include', '/admin/feeds')

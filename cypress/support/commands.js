@@ -10,7 +10,7 @@
 
 
 // Custom command to setup database (clear and seed users)
-// Note: This is now handled inside loginRememberSession for better session management
+// Note: This is now handled inside clearUsersLoginRememberSession for better session management
 Cypress.Commands.add('setupDatabase', () => {
   // Clear all sessions to ensure fresh state
   cy.clearCookies()
@@ -19,7 +19,7 @@ Cypress.Commands.add('setupDatabase', () => {
   // Clear database - expects redirect (302) or success (200)
   cy.request({
     method: 'POST',
-    url: '/tools/clear-database',
+    url: '/tools/clear-all-tables',
     followRedirect: false,
     failOnStatusCode: false
   }).then((response) => {
@@ -39,13 +39,31 @@ Cypress.Commands.add('setupDatabase', () => {
   })
 })
 
+Cypress.Commands.add('clearTable', (tableName) => {
+  cy.request({
+    method: 'POST',
+    url: '/tools/clear-table',
+    body: 'name=' + tableName,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    followRedirect: false,
+    failOnStatusCode: false
+  })
+})
+
 // Custom command to login
-Cypress.Commands.add('loginRememberSession', (username = 'admin', password = 'password') => {
+Cypress.Commands.add('clearUsersLoginRememberSession', (username = 'admin', password = 'password') => {
   cy.session([username, password], () => {
     // Setup database before login to ensure user exists
+    // Clear only users table, not other tables
     cy.request({
       method: 'POST',
-      url: '/tools/clear-database',
+      url: '/tools/clear-table',
+      body: 'name=users',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
       followRedirect: false,
       failOnStatusCode: false
     })

@@ -6,7 +6,7 @@ describe('Authentication', () => {
     // Setup database with admin user (done via cy.request since we're not logging in yet)
     cy.request({
       method: 'POST',
-      url: '/tools/clear-database',
+      url: '/tools/clear-all-tables',
       followRedirect: false,
       failOnStatusCode: false
     })

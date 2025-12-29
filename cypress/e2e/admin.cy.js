@@ -1,6 +1,6 @@
 describe('Admin Panel', () => {
   beforeEach(() => {
-    cy.loginRememberSession()
+    cy.clearUsersLoginRememberSession()
   })
 
   it('should display admin panel title', () => {
