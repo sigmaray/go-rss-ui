@@ -17,6 +17,7 @@ import (
 	"github.com/mmcdole/gofeed"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func loadTemplates(templatesDir string) multitemplate.Renderer {
@@ -679,10 +680,8 @@ func deleteFeed(c *gin.Context) {
 		return
 	}
 
-	// Delete associated items first
-	DB.Where("feed_id = ?", feed.ID).Delete(&Item{})
-
-	if err := DB.Delete(&feed).Error; err != nil {
+	// Items will be deleted automatically due to CASCADE constraint
+	if err := DB.Unscoped().Delete(&feed).Error; err != nil {
 		addFlashError(session, "Failed to delete feed: "+err.Error())
 		session.Save()
 		c.Redirect(http.StatusFound, "/admin/feeds")
@@ -697,17 +696,8 @@ func deleteFeed(c *gin.Context) {
 func deleteAllFeeds(c *gin.Context) {
 	session := sessions.Default(c)
 
-	// Delete all items first (due to foreign key constraint)
-	result := DB.Delete(&Item{}, "1 = 1")
-	if result.Error != nil {
-		addFlashError(session, "Failed to delete items")
-		session.Save()
-		c.Redirect(http.StatusFound, "/admin/feeds")
-		return
-	}
-
-	// Delete all feeds
-	result = DB.Delete(&Feed{}, "1 = 1")
+	// Delete all feeds (items will be deleted automatically due to CASCADE constraint)
+	result := DB.Unscoped().Delete(&Feed{}, "1 = 1")
 	if result.Error != nil {
 		addFlashError(session, "Failed to delete all feeds")
 		session.Save()
@@ -1220,7 +1210,9 @@ func dropDB(c *gin.Context) {
 	adminDSN := getAdminDSN()
 
 	// Connect to postgres database using GORM
-	db, err := gorm.Open(postgres.Open(adminDSN), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(adminDSN), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
 		addFlashError(session, "Failed to connect to postgres database: "+err.Error())
 		session.Save()

@@ -55,7 +55,7 @@ type Feed struct {
 	LastSuccessfullyFetchedAt *time.Time
 	LastError                 string `gorm:"type:text"`
 	LastErrorAt               *time.Time
-	Items                     []Item `gorm:"foreignKey:FeedID"`
+	Items                     []Item `gorm:"foreignKey:FeedID;constraint:OnDelete:CASCADE;"`
 }
 
 type Item struct {
