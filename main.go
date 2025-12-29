@@ -102,20 +102,16 @@ func loadTemplates(templatesDir string) multitemplate.Renderer {
 		panic(err.Error())
 	}
 
-	fmt.Println(includes)
-
 	// Generate our templates map from our layouts/ and includes/ directories
 	for _, include := range includes {
 		layoutCopy := make([]string, len(layouts))
 		copy(layoutCopy, layouts)
-		fmt.Println(layouts)
 		// Include partials in each template
 		files := append(layoutCopy, include)
 		files = append(files, partials...)
-		fmt.Println(files)
 		r.AddFromFiles(filepath.Base(include), files...)
 	}
-	fmt.Println(r)
+
 	return r
 }
 
@@ -163,6 +159,39 @@ func generatePageNumbers(currentPage, totalPages int64) []interface{} {
 	return pages
 }
 
+// showStartupInfo displays information about available commands and what the application does
+func showStartupInfo() {
+	fmt.Println("=" + strings.Repeat("=", 70) + "=")
+	fmt.Println("  Go RSS UI Application")
+	fmt.Println("=" + strings.Repeat("=", 70) + "=")
+	fmt.Println()
+	fmt.Println("Starting web server on http://localhost:8082")
+	fmt.Println()
+	fmt.Println("When you run the application without a command, it starts the web server.")
+	fmt.Println("You can access the application in your browser at http://localhost:8082")
+	fmt.Println()
+	fmt.Println("Available CLI commands:")
+	fmt.Println()
+	fmt.Println("  clear-users  - Clear all data from users table")
+	fmt.Println("  seed-users   - Create a standard admin user")
+	fmt.Println("  seed-feeds   - Create default RSS feeds")
+	fmt.Println("  fetch-feeds  - Fetch and process all RSS feeds (creates/updates items)")
+	fmt.Println("  execute-sql  - Execute SQL query (provide query as argument or via stdin)")
+	fmt.Println("                Example: go run . execute-sql \"SELECT * FROM feeds\"")
+	fmt.Println("  migrate      - Create tables in database using AutoMigrate")
+	fmt.Println("  drop-db      - Delete the application database")
+	fmt.Println("  create-db    - Create the application database")
+	fmt.Println()
+	fmt.Println("Usage examples:")
+	fmt.Println("  go run .                    - Start web server (default)")
+	fmt.Println("  go run . seed-users         - Create admin user")
+	fmt.Println("  go run . fetch-feeds        - Fetch all RSS feeds")
+	fmt.Println("  go run . execute-sql \"...\"  - Execute SQL query")
+	fmt.Println()
+	fmt.Println("=" + strings.Repeat("=", 70) + "=")
+	fmt.Println()
+}
+
 func main() {
 	// Load environment variables from .env file
 	LoadConfig()
@@ -202,6 +231,9 @@ func main() {
 		}
 		return
 	}
+
+	// Show informational message about available commands
+	showStartupInfo()
 
 	// Run the web server
 	ConnectDatabase()
