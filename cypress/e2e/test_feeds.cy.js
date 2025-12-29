@@ -113,6 +113,86 @@ describe('Test Feeds Fetch', () => {
     cy.get('table').contains('th', 'Description').should('be.visible')
   })
   
+  it('should handle feed fetch errors (404 and 500) and display them in UI', () => {
+    // Visit feeds page
+    cy.visit('/admin/feeds')
+    
+    // Create feed with 404 error
+    cy.visit('/admin/feeds/new')
+    cy.get('input[name="url"]').type('http://localhost:8082/test_feeds/error404.xml')
+    cy.get('form[action="/admin/feeds"]').submit()
+    cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
+    cy.get('.success').should('contain', 'Feed created successfully')
+    
+    // Create feed with 500 error
+    cy.visit('/admin/feeds/new')
+    cy.get('input[name="url"]').type('http://localhost:8082/test_feeds/error500.xml')
+    cy.get('form[action="/admin/feeds"]').submit()
+    cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
+    cy.get('.success').should('contain', 'Feed created successfully')
+    
+    // Verify feeds are created
+    cy.visit('/admin/feeds')
+    cy.get('table tbody tr').should('have.length.at.least', 2)
+    
+    // Find the row with error404.xml feed and click Fetch button
+    cy.contains('table tbody tr', 'error404.xml').within(() => {
+      cy.get('form[action*="/fetch"] button[type="submit"]').click()
+    })
+    
+    // Wait for redirect back to feeds page
+    cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
+    
+    // Verify error is displayed for 404 feed
+    cy.contains('table tbody tr', 'error404.xml').within(() => {
+      // Check that Last Error column (5th td, index 4) contains error text
+      cy.get('td').eq(4).should('not.contain', '—').should('not.be.empty')
+      // Check that Last Error At column (6th td, index 5) contains timestamp
+      cy.get('td').eq(5).should('not.contain', '—')
+      cy.get('td').eq(5).invoke('text').then((text) => {
+        expect(text.trim()).to.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)
+      })
+    })
+    
+    // Find the row with error500.xml feed and click Fetch button
+    cy.contains('table tbody tr', 'error500.xml').within(() => {
+      cy.get('form[action*="/fetch"] button[type="submit"]').click()
+    })
+    
+    // Wait for redirect back to feeds page
+    cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
+    
+    // Verify error is displayed for 500 feed
+    cy.contains('table tbody tr', 'error500.xml').within(() => {
+      // Check that Last Error column (5th td, index 4) contains error text
+      cy.get('td').eq(4).should('not.contain', '—').should('not.be.empty')
+      // Check that Last Error At column (6th td, index 5) contains timestamp
+      cy.get('td').eq(5).should('not.contain', '—')
+      cy.get('td').eq(5).invoke('text').then((text) => {
+        expect(text.trim()).to.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)
+      })
+    })
+    
+    // Verify that error messages contain relevant information
+    cy.contains('table tbody tr', 'error404.xml').within(() => {
+      cy.get('td').eq(4).invoke('text').then((errorText) => {
+        // Error should mention 404 or Not Found
+        expect(errorText.toLowerCase()).to.satisfy((text) => {
+          return text.includes('404') || text.includes('not found') || text.includes('error')
+        })
+      })
+    })
+    
+    cy.contains('table tbody tr', 'error500.xml').within(() => {
+      cy.get('td').eq(4).invoke('text').then((errorText) => {
+        // Error should mention 500 or Internal Server Error
+        expect(errorText.toLowerCase()).to.satisfy((text) => {
+          return text.includes('500') || text.includes('internal server error') || text.includes('error')
+        })
+      })
+    })
+  })
+  
   // it('should not fetch test feeds in background', () => {
   //   // This test verifies that test feeds are excluded from background fetching
   //   // We'll create a test feed and verify it's not fetched automatically

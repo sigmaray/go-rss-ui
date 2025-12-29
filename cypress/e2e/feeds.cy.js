@@ -1,6 +1,7 @@
 describe('Feed Management', () => {
   beforeEach(() => {
     cy.clearUsersLoginRememberSession()
+    cy.clearTable('feeds')
     // Ensure we're on the admin page after login
     cy.visit('/admin/feeds')
     cy.url().should('include', '/admin/feeds')
@@ -122,7 +123,17 @@ describe('Feed Management', () => {
       cy.get('tbody tr').contains(testFeedUrl).parent('tr').find('form[action*="/delete"] button').click()
       
       cy.url().should('include', '/admin/feeds')
-      cy.get('tbody tr').should('not.contain', testFeedUrl)
+      // Check that the feed is no longer in the table
+      // If table is empty, tbody might not have any tr elements
+      cy.get('tbody').then(($tbody) => {
+        if ($tbody.find('tr').length > 0) {
+          // Table has rows, verify testFeedUrl is not in any of them
+          cy.get('tbody tr').should('not.contain', testFeedUrl)
+        } else {
+          // Table is empty, which is fine - feed was deleted
+          cy.get('tbody').should('exist')
+        }
+      })
     })
 
     it('should cancel delete when confirmation is rejected', () => {
@@ -145,9 +156,9 @@ describe('Feed Management', () => {
     beforeEach(() => {
       // Create some test feeds
       const feedUrls = [
-        `https://example.com/deleteall1_${Date.now()}.xml`,
-        `https://example.com/deleteall2_${Date.now()}.xml`,
-        `https://example.com/deleteall3_${Date.now()}.xml`
+        `https://example123.com/deleteall1_${Date.now()}.xml`,
+        `https://example123.com/deleteall2_${Date.now()}.xml`,
+        `https://example123.com/deleteall3_${Date.now()}.xml`
       ]
       
       feedUrls.forEach((feedUrl) => {

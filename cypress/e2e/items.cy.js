@@ -48,24 +48,27 @@ describe('Items Management', () => {
     })
 
     it('should display item detail page when items exist', () => {
+      // First, ensure we have items by creating a feed and fetching items
+      cy.visit('/admin/feeds/new')
+      cy.get('input[name="url"]').type('http://localhost:8082/test_feeds/test1.xml')
+      cy.get('form[action="/admin/feeds"]').submit()
+      cy.url().should('include', '/admin/feeds')
+      
+      // Fetch items from the feed
       cy.visit('/admin/items')
-      // Check if any items exist by looking for View links
-      cy.get('body').then(($body) => {
-        if ($body.find('a[href*="/items/"]').length > 0) {
-          // Items exist - test viewing one
-          cy.get('tbody tr').first().within(() => {
-            cy.get('a[href*="/items/"]').invoke('attr', 'href').then((href) => {
-              const itemId = href.split('/').pop()
-              cy.visit(`/admin/items/${itemId}`)
-              cy.get('h2').should('be.visible')
-              cy.get('a[href="/admin/items"]').should('be.visible').should('contain', 'Back to Items')
-            })
-          })
-        } else {
-          // No items - just verify items page loads correctly
-          cy.get('h1').contains('Items').should('be.visible')
-          cy.get('table').should('be.visible')
-        }
+      cy.get('form[action="/admin/items/fetch"] button').click()
+      cy.url().should('include', '/admin/items')
+      
+      // Wait for items to be fetched
+      cy.wait(2000)
+      
+      // Now verify we can view an item
+      cy.get('tbody tr').should('have.length.at.least', 1)
+      cy.get('tbody tr').first().find('a[href*="/items/"]').invoke('attr', 'href').then((href) => {
+        const itemId = href.split('/').pop()
+        cy.visit(`/admin/items/${itemId}`)
+        cy.get('h2').should('be.visible')
+        cy.get('a[href="/admin/items"]').should('be.visible').should('contain', 'Back to Items')
       })
     })
   })

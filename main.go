@@ -251,7 +251,27 @@ func main() {
 	r.HTMLRender = loadTemplates("./templates")
 
 	r.Static("/static", "./static")
-	r.Static("/test_feeds", "./test_feeds")
+	
+	// Custom handler for test_feeds that checks for error endpoints first
+	// This single handler handles both error endpoints and static files
+	r.GET("/test_feeds/*filepath", func(c *gin.Context) {
+		filepath := c.Param("filepath")
+		
+		// Handle error endpoints
+		if filepath == "/error404.xml" {
+			c.Header("Content-Type", "text/plain")
+			c.String(http.StatusNotFound, "404 Not Found")
+			return
+		}
+		if filepath == "/error500.xml" {
+			c.Header("Content-Type", "text/plain")
+			c.String(http.StatusInternalServerError, "500 Internal Server Error")
+			return
+		}
+		
+		// Serve static file for all other paths
+		c.File("./test_feeds" + filepath)
+	})
 
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
