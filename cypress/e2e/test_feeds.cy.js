@@ -54,6 +54,62 @@ describe('Test Feeds Fetch', () => {
     cy.get('table tr').should('contain','Test Item A')
     cy.get('table tr').should('contain','Test Item B')
     cy.get('table tr').should('contain','Test Item C')
+    
+    // Navigate to info page and verify statistics
+    cy.visit('/info')
+    cy.url().should('include', '/info')
+    cy.get('h1').should('contain', 'System Information')
+    cy.get('h2').should('contain', 'System Statistics')
+    
+    // Check Database Statistics section
+    cy.get('h3').contains('Database Statistics').should('be.visible')
+    
+    // // Verify Total Feeds count (should be 2)
+    // cy.contains('td', 'Total Feeds:').parent('tr').within(() => {
+    //   cy.get('td').eq(1).should('contain', '2')
+    // })
+    
+    // Verify Total Items count (should be at least 5)
+    cy.contains('td', 'Total Items:').parent('tr').within(() => {
+      cy.get('td').eq(1).invoke('text').then((text) => {
+        const itemsCount = parseInt(text.trim())
+        expect(itemsCount).to.be.at.least(5)
+      })
+    })
+    
+    // Check Feed Fetch Status section
+    cy.get('h3').contains('Feed Fetch Status').should('be.visible')
+    
+    // Verify Last Successful Fetch exists and contains timestamp
+    cy.contains('td', 'Last Successful Fetch:').parent('tr').within(() => {
+      cy.get('td').eq(1).should('not.contain', 'Never')
+      // Check that it contains a timestamp format (YYYY-MM-DD HH:MM:SS)
+      cy.get('td').eq(1).invoke('text').then((text) => {
+        expect(text).to.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)
+      })
+      // Verify it contains one of the test feed URLs
+      cy.get('td').eq(1).should('contain', '/test_feeds/')
+    })
+    
+    // Verify Last Failed Fetch (should be "Never" if no errors, or contain timestamp if there were errors)
+    cy.contains('td', 'Last Failed Fetch:').parent('tr').within(() => {
+      cy.get('td').eq(1).then(($td) => {
+        const text = $td.text()
+        if (text.includes('Never')) {
+          // No errors, which is fine
+          cy.get('td').eq(1).should('contain', 'Never')
+        } else {
+          // There were errors, verify format
+          expect(text).to.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)
+        }
+      })
+    })
+    
+    // Verify Environment Variables section exists
+    cy.get('h3').contains('Environment Variables').should('be.visible')
+    cy.get('table').contains('th', 'Variable Name').should('be.visible')
+    cy.get('table').contains('th', 'Value').should('be.visible')
+    cy.get('table').contains('th', 'Description').should('be.visible')
   })
   
   // it('should not fetch test feeds in background', () => {

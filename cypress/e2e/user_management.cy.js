@@ -1,6 +1,6 @@
 describe('User Management', () => {
   beforeEach(() => {
-    cy.loginRememberSession()
+    cy.clearUsersLoginRememberSession()    
   })
 
   describe('Create User', () => {
