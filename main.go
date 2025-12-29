@@ -185,6 +185,8 @@ func main() {
 			CommandCreateDB()
 		case "fetch-feeds":
 			CommandFetchFeeds()
+		case "execute-sql":
+			CommandExecuteSQL()
 		default:
 			fmt.Println("Unknown command:", command)
 			fmt.Println("\nAvailable commands:")
@@ -192,6 +194,7 @@ func main() {
 			fmt.Println("  seed-users   - Create a standard admin user")
 			fmt.Println("  seed-feeds   - Create default RSS feeds")
 			fmt.Println("  fetch-feeds  - Fetch and process all RSS feeds")
+			fmt.Println("  execute-sql  - Execute SQL query (provide query as argument or via stdin)")
 			fmt.Println("  migrate      - Create tables in database using AutoMigrate")
 			fmt.Println("  drop-db      - Delete the application database")
 			fmt.Println("  create-db    - Create the application database")
@@ -263,6 +266,9 @@ func main() {
 
 	// Logs route (requires authentication)
 	r.GET("/logs", AuthRequired(), showLogs)
+
+	// Info route (requires authentication)
+	r.GET("/info", AuthRequired(), showInfo)
 
 	// Tools routes (only available when CYPRESS=true)
 	if IsCypressMode() {
@@ -925,6 +931,162 @@ func showLogs(c *gin.Context) {
 		"entries": entries,
 	})
 	c.HTML(http.StatusOK, "logs.html", data)
+}
+
+// EnvVarInfo contains information about an environment variable
+type EnvVarInfo struct {
+	Name        string
+	Value       string
+	Description string
+}
+
+func showInfo(c *gin.Context) {
+	// Get statistics
+	var feedsCount int64
+	DB.Model(&Feed{}).Count(&feedsCount)
+
+	var itemsCount int64
+	DB.Model(&Item{}).Count(&itemsCount)
+
+	// Get last successful fetch
+	var lastSuccessFeed Feed
+	var lastSuccessTime *time.Time
+	DB.Where("last_successfully_fetched_at IS NOT NULL").
+		Order("last_successfully_fetched_at DESC").
+		First(&lastSuccessFeed)
+	if lastSuccessFeed.LastSuccessfullyFetchedAt != nil {
+		lastSuccessTime = lastSuccessFeed.LastSuccessfullyFetchedAt
+	}
+
+	// Get last error fetch
+	var lastErrorFeed Feed
+	var lastErrorTime *time.Time
+	var lastError string
+	DB.Where("last_error_at IS NOT NULL").
+		Order("last_error_at DESC").
+		First(&lastErrorFeed)
+	if lastErrorFeed.LastErrorAt != nil {
+		lastErrorTime = lastErrorFeed.LastErrorAt
+		lastError = lastErrorFeed.LastError
+	}
+
+	// Get environment variables
+	envVars := []EnvVarInfo{
+		{
+			Name:        "DATABASE_URL",
+			Value:       maskPassword(os.Getenv("DATABASE_URL")),
+			Description: "Complete PostgreSQL connection string (takes precedence over individual DB_* variables)",
+		},
+		{
+			Name:        "DB_HOST",
+			Value:       getEnvOrDefault("DB_HOST", "localhost (default)"),
+			Description: "PostgreSQL database host",
+		},
+		{
+			Name:        "DB_USER",
+			Value:       getEnvOrDefault("DB_USER", "postgres (default)"),
+			Description: "PostgreSQL database user",
+		},
+		{
+			Name:        "DB_PASSWORD",
+			Value:       maskPassword(getEnvOrDefault("DB_PASSWORD", "postgres (default)")),
+			Description: "PostgreSQL database password",
+		},
+		{
+			Name:        "DB_NAME",
+			Value:       getEnvOrDefault("DB_NAME", "go_rss_ui_2 (default)"),
+			Description: "PostgreSQL database name",
+		},
+		{
+			Name:        "DB_PORT",
+			Value:       getEnvOrDefault("DB_PORT", "5432 (default)"),
+			Description: "PostgreSQL database port",
+		},
+		{
+			Name:        "DB_SSLMODE",
+			Value:       getEnvOrDefault("DB_SSLMODE", "disable (default)"),
+			Description: "PostgreSQL SSL mode",
+		},
+		{
+			Name:        "DB_TIMEZONE",
+			Value:       getEnvOrDefault("DB_TIMEZONE", "Asia/Shanghai (default)"),
+			Description: "PostgreSQL timezone",
+		},
+		{
+			Name:        "BACKGROUND_FETCH_ENABLED",
+			Value:       getEnvValueOrDefault("BACKGROUND_FETCH_ENABLED", "true (default)"),
+			Description: "Enable/disable background feed fetching",
+		},
+		{
+			Name:        "BACKGROUND_FETCH_INTERVAL",
+			Value:       fmt.Sprintf("%d (default: 60)", GetBackgroundFetchInterval()),
+			Description: "Background feed fetch interval in seconds",
+		},
+		{
+			Name:        "CYPRESS",
+			Value:       getEnvValueOrDefault("CYPRESS", "false (default)"),
+			Description: "Enable Cypress mode (enables /tools page for testing)",
+		},
+	}
+
+	data := getTemplateData(c, gin.H{
+		"title":           "System Information",
+		"feedsCount":      feedsCount,
+		"itemsCount":      itemsCount,
+		"lastSuccessTime": lastSuccessTime,
+		"lastSuccessFeed": lastSuccessFeed,
+		"lastErrorTime":   lastErrorTime,
+		"lastError":       lastError,
+		"lastErrorFeed":   lastErrorFeed,
+		"envVars":         envVars,
+	})
+	c.HTML(http.StatusOK, "info.html", data)
+}
+
+// maskPassword masks password in connection strings
+func maskPassword(value string) string {
+	if value == "" {
+		return "(not set)"
+	}
+	// Handle postgres://user:password@host format
+	if strings.HasPrefix(value, "postgres://") || strings.HasPrefix(value, "postgresql://") {
+		parts := strings.Split(value, "@")
+		if len(parts) == 2 {
+			authPart := parts[0]
+			if strings.Contains(authPart, ":") {
+				authParts := strings.Split(authPart, ":")
+				if len(authParts) >= 3 {
+					// postgres://user:password@host
+					return fmt.Sprintf("%s:%s:***@%s", authParts[0], authParts[1], parts[1])
+				}
+			}
+		}
+	}
+	// If it's a connection string with password=, mask the password
+	if strings.Contains(value, "password=") {
+		parts := strings.Split(value, " ")
+		for i, part := range parts {
+			if strings.HasPrefix(part, "password=") {
+				parts[i] = "password=***"
+				break
+			}
+		}
+		return strings.Join(parts, " ")
+	}
+	// Otherwise, just mask the whole value if it looks like a password
+	if len(value) > 0 && value != "(not set)" {
+		return "***"
+	}
+	return value
+}
+
+// getEnvValueOrDefault returns the value or default string
+func getEnvValueOrDefault(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
 
 func showItem(c *gin.Context) {

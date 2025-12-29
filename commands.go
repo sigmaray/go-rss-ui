@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -228,4 +231,153 @@ func CommandFetchFeeds() {
 	log.Println("Starting feed fetch...")
 	itemsCreated, itemsUpdated, errors := processAllFeeds()
 	log.Printf("Feed fetch completed: %d items created, %d items updated, %d errors", itemsCreated, itemsUpdated, errors)
+}
+
+// CommandExecuteSQL executes a SQL query from command line
+func CommandExecuteSQL() {
+	ConnectDatabase()
+
+	// Get SQL query from command line arguments or stdin
+	var sqlQuery string
+	if len(os.Args) > 2 {
+		// SQL query provided as arguments (join all arguments after "execute-sql")
+		sqlQuery = strings.Join(os.Args[2:], " ")
+	} else {
+		// Read from stdin
+		fmt.Print("Enter SQL query (end with semicolon and newline or Ctrl+D):\n> ")
+		scanner := bufio.NewScanner(os.Stdin)
+		var lines []string
+		for scanner.Scan() {
+			line := scanner.Text()
+			lines = append(lines, line)
+			// Check if line ends with semicolon (end of query)
+			if strings.HasSuffix(strings.TrimSpace(line), ";") {
+				break
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			log.Fatalf("Error reading input: %v", err)
+		}
+		if len(lines) == 0 {
+			log.Fatal("No SQL query provided")
+		}
+		sqlQuery = strings.Join(lines, " ")
+	}
+
+	if strings.TrimSpace(sqlQuery) == "" {
+		log.Fatal("SQL query cannot be empty")
+	}
+
+	// Execute SQL query
+	var results []map[string]interface{}
+	rows, err := DB.Raw(sqlQuery).Rows()
+	if err != nil {
+		log.Fatalf("Error executing SQL query: %v", err)
+	}
+	defer rows.Close()
+
+	// Get column names
+	columns, err := rows.Columns()
+	if err != nil {
+		log.Fatalf("Error getting columns: %v", err)
+	}
+
+	// Scan rows
+	for rows.Next() {
+		// Create a slice of interface{} to hold column values
+		values := make([]interface{}, len(columns))
+		valuePtrs := make([]interface{}, len(columns))
+		for i := range columns {
+			valuePtrs[i] = &values[i]
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			log.Fatalf("Error scanning row: %v", err)
+		}
+
+		// Create a map for this row
+		row := make(map[string]interface{})
+		for i, col := range columns {
+			val := values[i]
+			// Convert []byte to string for better representation
+			if b, ok := val.([]byte); ok {
+				row[col] = string(b)
+			} else {
+				row[col] = val
+			}
+		}
+		results = append(results, row)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Fatalf("Error iterating rows: %v", err)
+	}
+
+	// Print results
+	if len(columns) == 0 {
+		// Query doesn't return rows (INSERT, UPDATE, DELETE, etc.)
+		fmt.Println("\nQuery executed successfully (no rows returned).")
+		return
+	}
+
+	fmt.Printf("\nQuery executed successfully. Found %d row(s).\n\n", len(results))
+
+	if len(results) > 0 {
+		// Calculate column widths for better formatting
+		colWidths := make([]int, len(columns))
+		for i, col := range columns {
+			colWidths[i] = len(col)
+			for _, row := range results {
+				valStr := fmt.Sprintf("%v", row[col])
+				if len(valStr) > colWidths[i] {
+					colWidths[i] = len(valStr)
+				}
+			}
+			// Limit max width
+			if colWidths[i] > 50 {
+				colWidths[i] = 50
+			}
+		}
+
+		// Print header
+		for i, col := range columns {
+			if i > 0 {
+				fmt.Print(" | ")
+			}
+			fmt.Printf("%-*s", colWidths[i], col)
+		}
+		fmt.Println()
+
+		// Print separator
+		totalWidth := 0
+		for i, width := range colWidths {
+			if i > 0 {
+				totalWidth += 3 // " | "
+			}
+			totalWidth += width
+		}
+		fmt.Println(strings.Repeat("-", totalWidth))
+
+		// Print rows
+		for _, row := range results {
+			for i, col := range columns {
+				if i > 0 {
+					fmt.Print(" | ")
+				}
+				val := row[col]
+				valStr := "NULL"
+				if val != nil {
+					valStr = fmt.Sprintf("%v", val)
+					// Truncate if too long
+					if len(valStr) > 50 {
+						valStr = valStr[:47] + "..."
+					}
+				}
+				fmt.Printf("%-*s", colWidths[i], valStr)
+			}
+			fmt.Println()
+		}
+	} else {
+		fmt.Println("(No rows returned)")
+	}
 }

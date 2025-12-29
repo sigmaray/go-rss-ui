@@ -115,6 +115,8 @@ The application supports several CLI commands:
 - `go run . seed-users` - Create default admin user
 - `go run . seed-feeds` - Create default RSS feeds
 - `go run . fetch-feeds` - Fetch and process all RSS feeds (creates/updates items)
+- `go run . execute-sql "SELECT * FROM feeds"` - Execute SQL query (provide query as argument)
+- `go run . execute-sql` - Execute SQL query interactively (reads from stdin)
 - `go run . clear-users` - Clear all users from database
 - `go run . create-db` - Create the application database
 - `go run . drop-db` - Drop the application database
