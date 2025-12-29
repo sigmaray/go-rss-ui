@@ -245,6 +245,7 @@ func main() {
 		admin.GET("/feeds", adminFeedsIndex)
 		admin.GET("/feeds/new", showCreateFeedForm)
 		admin.POST("/feeds", createFeed)
+		admin.POST("/feeds/:id/fetch", fetchSingleFeed)
 		admin.POST("/feeds/:id/delete", deleteFeed)
 		admin.POST("/feeds/delete-all", deleteAllFeeds)
 		admin.POST("/feeds/seed", seedFeeds)
@@ -779,6 +780,32 @@ func createFeed(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/admin/feeds")
 }
 
+func fetchSingleFeed(c *gin.Context) {
+	id := c.Param("id")
+	session := sessions.Default(c)
+
+	var feed Feed
+	if err := DB.First(&feed, id).Error; err != nil {
+		addFlashError(session, "Feed not found")
+		session.Save()
+		c.Redirect(http.StatusFound, "/admin/feeds")
+		return
+	}
+
+	itemsCreated, itemsUpdated, err := processSingleFeed(feed.ID)
+	if err != nil {
+		addFlashError(session, fmt.Sprintf("Failed to fetch feed: %v", err))
+		session.Save()
+		c.Redirect(http.StatusFound, "/admin/feeds")
+		return
+	}
+
+	successMsg := fmt.Sprintf("Feed fetched successfully: %d items created, %d items updated", itemsCreated, itemsUpdated)
+	addFlashSuccess(session, successMsg)
+	session.Save()
+	c.Redirect(http.StatusFound, "/admin/feeds")
+}
+
 func deleteFeed(c *gin.Context) {
 	id := c.Param("id")
 	session := sessions.Default(c)
@@ -1120,6 +1147,106 @@ func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, error
 	wg.Wait()
 
 	return itemsCreated, itemsUpdated, errors
+}
+
+// processSingleFeed processes a single feed by ID and returns created, updated, and error count
+func processSingleFeed(feedID uint) (itemsCreated, itemsUpdated int, err error) {
+	var feed Feed
+	if err := DB.First(&feed, feedID).Error; err != nil {
+		return 0, 0, err
+	}
+
+	fp := gofeed.NewParser()
+	parsedFeed, err := fp.ParseURL(feed.URL)
+	if err != nil {
+		log.Printf("Error parsing feed %s: %v", feed.URL, err)
+		// Update feed with error information
+		now := time.Now()
+		feed.LastError = err.Error()
+		feed.LastErrorAt = &now
+		DB.Save(&feed)
+		// Add error log entry
+		addLogEntry("error", feed.URL, fmt.Sprintf("Failed to fetch feed: %v", err))
+		return 0, 0, err
+	}
+
+	// Update feed title and description if available
+	if parsedFeed.Title != "" {
+		feed.Title = parsedFeed.Title
+	}
+	if parsedFeed.Description != "" {
+		feed.Description = parsedFeed.Description
+	}
+	// Update successful fetch timestamp and clear error
+	now := time.Now()
+	feed.LastSuccessfullyFetchedAt = &now
+	feed.LastError = ""
+	feed.LastErrorAt = nil
+	DB.Save(&feed)
+
+	// Local counters for this feed
+	feedCreated := 0
+	feedUpdated := 0
+
+	// Process items for this feed
+	for _, item := range parsedFeed.Items {
+		// Determine GUID
+		guid := item.GUID
+		if guid == "" {
+			guid = item.Link
+		}
+
+		// Parse published date
+		var publishedAt *time.Time
+		if item.PublishedParsed != nil {
+			publishedAt = item.PublishedParsed
+		} else if item.UpdatedParsed != nil {
+			publishedAt = item.UpdatedParsed
+		}
+
+		// Check if item already exists by GUID
+		var existingItem Item
+		result := DB.Where("guid = ? AND feed_id = ?", guid, feed.ID).First(&existingItem)
+
+		if result.Error != nil {
+			// Item doesn't exist, create it
+			newItem := Item{
+				FeedID:      feed.ID,
+				Title:       item.Title,
+				Link:        item.Link,
+				Description: item.Description,
+				Content:     getItemContent(item),
+				Author:      getItemAuthor(item),
+				PublishedAt: publishedAt,
+				GUID:        guid,
+			}
+			if err := DB.Create(&newItem).Error; err != nil {
+				log.Printf("Error creating item: %v", err)
+			} else {
+				feedCreated++
+			}
+		} else {
+			// Item exists, update it
+			existingItem.Title = item.Title
+			existingItem.Link = item.Link
+			existingItem.Description = item.Description
+			existingItem.Content = getItemContent(item)
+			existingItem.Author = getItemAuthor(item)
+			if publishedAt != nil {
+				existingItem.PublishedAt = publishedAt
+			}
+			if err := DB.Save(&existingItem).Error; err != nil {
+				log.Printf("Error updating item: %v", err)
+			} else {
+				feedUpdated++
+			}
+		}
+	}
+
+	// Add success log entry with created and updated counts
+	addLogEntry("success", feed.URL, fmt.Sprintf("Successfully fetched feed: %d created, %d updated", feedCreated, feedUpdated))
+
+	return feedCreated, feedUpdated, nil
 }
 
 func fetchFeedItems(c *gin.Context) {

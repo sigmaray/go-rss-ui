@@ -34,8 +34,11 @@
                 <td>{{ if .LastErrorAt }}{{ .LastErrorAt.Format "2006-01-02 15:04:05" }}{{ else }}—{{ end }}</td>
                 <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
                 <td class="actions">
-                    <form action="/admin/feeds/{{ .ID }}/delete" method="post" onsubmit="return confirm('Are you sure you want to delete this feed?');">
-                        <button type="submit">Delete</button>
+                    <form action="/admin/feeds/{{ .ID }}/fetch" method="post" class="inline-form">
+                        <button type="submit">Fetch</button>
+                    </form>
+                    <form action="/admin/feeds/{{ .ID }}/delete" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to delete this feed?');">
+                        <button type="submit" class="btn-danger">Delete</button>
                     </form>
                 </td>
             </tr>
