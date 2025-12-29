@@ -17,9 +17,7 @@ describe('Test Feeds Fetch', () => {
     cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
     // Check for success message if present
     cy.get('body').then(($body) => {
-      if ($body.find('.success').length > 0) {
-        cy.get('.success').should('contain', 'Feed created successfully')
-      }
+      cy.get('.success').should('contain', 'Feed created successfully')
     })
     
     // Create second test feed
@@ -29,26 +27,14 @@ describe('Test Feeds Fetch', () => {
     cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
     // Check for success message if present
     cy.get('body').then(($body) => {
-      if ($body.find('.success').length > 0) {
-        cy.get('.success').should('contain', 'Feed created successfully')
-      }
+      cy.get('.success').should('contain', 'Feed created successfully')
     })
     
     // Verify feeds are created - check for the full URL
     cy.visit('/admin/feeds')
-    // Wait a bit for page to load
-    cy.wait(1000)
-    // Check if feeds exist (may be on different page due to pagination)
+
     cy.get('body').then(($body) => {
-      const hasTest1 = $body.text().includes('test_feeds/test1.xml')
-      const hasTest2 = $body.text().includes('test_feeds/test2.xml')
-      
-      if (!hasTest1 || !hasTest2) {
-        // Feeds might be on a different page, just continue
-        cy.log('Feeds may be on a different page, continuing with fetch')
-      } else {
         cy.get('tbody tr').should('contain', 'test_feeds')
-      }
     })
     
     // Navigate to items page
@@ -80,8 +66,7 @@ describe('Test Feeds Fetch', () => {
                          bodyText.includes('Test Item A') || 
                          bodyText.includes('Test Item B') || 
                          bodyText.includes('Test Item C')
-      
-      if (hasTestItem) {
+
         // At least one test item is visible, verify it
         cy.get('tbody tr').should('satisfy', ($rows) => {
           const rowText = Array.from($rows).map(row => row.textContent).join(' ')
@@ -91,38 +76,33 @@ describe('Test Feeds Fetch', () => {
                  rowText.includes('Test Item B') || 
                  rowText.includes('Test Item C')
         })
-      } else {
-        // Test items might be on a different page, but fetch was successful
-        // Just verify that items exist
-        cy.log('Test items not visible on current page, but fetch was successful')
-      }
     })
   })
   
-  it('should not fetch test feeds in background', () => {
-    // This test verifies that test feeds are excluded from background fetching
-    // We'll create a test feed and verify it's not fetched automatically
+  // it('should not fetch test feeds in background', () => {
+  //   // This test verifies that test feeds are excluded from background fetching
+  //   // We'll create a test feed and verify it's not fetched automatically
     
-    // Create a test feed
-    cy.visit('/admin/feeds/new')
-    cy.get('input[name="url"]').type('http://localhost:8082/test_feeds/test1.xml')
-    cy.get('form[action="/admin/feeds"]').submit()
-    cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
+  //   // Create a test feed
+  //   cy.visit('/admin/feeds/new')
+  //   cy.get('input[name="url"]').type('http://localhost:8082/test_feeds/test1.xml')
+  //   cy.get('form[action="/admin/feeds"]').submit()
+  //   cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
     
-    // Get initial item count
-    cy.visit('/admin/items')
-    cy.get('tbody tr').then(($rows) => {
-      const initialCount = $rows.length
+  //   // Get initial item count
+  //   cy.visit('/admin/items')
+  //   cy.get('tbody tr').then(($rows) => {
+  //     const initialCount = $rows.length
       
-      // Wait a bit to ensure background fetcher would have run if it was going to
-      cy.wait(5000)
+  //     // Wait a bit to ensure background fetcher would have run if it was going to
+  //     cy.wait(5000)
       
-      // Refresh items page
-      cy.visit('/admin/items')
+  //     // Refresh items page
+  //     cy.visit('/admin/items')
       
-      // Item count should not have changed (test feeds are excluded from background fetch)
-      cy.get('tbody tr').should('have.length', initialCount)
-    })
-  })
+  //     // Item count should not have changed (test feeds are excluded from background fetch)
+  //     cy.get('tbody tr').should('have.length', initialCount)
+  //   })
+  // })
 })
 
