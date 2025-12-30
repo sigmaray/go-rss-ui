@@ -298,6 +298,18 @@ go run . migrate
 - **Background Fetching**: Configurable worker pool with concurrent processing
 - **Pagination**: Implemented for users, feeds, and items using the paginate library
 
+## Screenshots
+
+<img width="1306" height="1074" alt="image" src="https://github.com/user-attachments/assets/5166352d-f0f6-4524-b48b-c24babaaa4a4" />
+
+<img width="1306" height="1074" alt="image" src="https://github.com/user-attachments/assets/7a71ae73-a971-40fd-9161-2ea64b2d07c7" />
+
+<img width="1306" height="1074" alt="image" src="https://github.com/user-attachments/assets/3bcbf654-2c8e-428a-a5be-6589513fcaaa" />
+
+<img width="1306" height="1130" alt="image" src="https://github.com/user-attachments/assets/eb9bff67-512f-4867-8605-8ce3891a1eae" />
+
+<img width="1306" height="1130" alt="image" src="https://github.com/user-attachments/assets/cc29b8d6-cd7f-4526-8d9b-cf9c35bc4eb2" />
+
 ## License
 
 This project is open source and available under the MIT License.
