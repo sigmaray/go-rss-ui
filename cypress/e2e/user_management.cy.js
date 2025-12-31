@@ -68,7 +68,7 @@ describe('User Management', () => {
       cy.url().then((url) => {
         if (url.includes('/admin/users/new')) {
           // Still on create page - error should be shown (correct behavior)
-          cy.get('.error').should('be.visible').should('contain', 'Failed to create user')
+          cy.get('.alert-danger').should('be.visible').should('contain', 'Failed to create user')
         } else {
           // Redirected to users page - this may indicate unique constraint is not enforced
           // This is a known limitation - the app should show error but currently redirects
@@ -185,7 +185,7 @@ describe('User Management', () => {
 
     it('should show error when editing non-existent user', () => {
       cy.visit('/admin/users/99999/edit', { failOnStatusCode: false })
-      cy.get('.error').should('be.visible').should('contain', 'User not found')
+      cy.get('.alert-danger').should('be.visible').should('contain', 'User not found')
       cy.url().should('include', '/admin/users')
     })
   })

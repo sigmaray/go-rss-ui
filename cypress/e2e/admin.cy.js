@@ -10,7 +10,9 @@ describe('Admin Panel', () => {
 
   it('should display users section', () => {
     cy.visit('/admin')
-    cy.get('h2').contains('Users').should('be.visible')
+    // Check for users table or users content
+    cy.get('table').should('be.visible')
+    cy.get('thead tr').should('contain', 'Username')
   })
 
   it('should display users table with headers', () => {

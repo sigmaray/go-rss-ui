@@ -80,8 +80,8 @@ Cypress.Commands.add('clearUsersLoginRememberSession', (username = 'admin', pass
     cy.get('input[name="password"]').should('be.visible').type(password)
     cy.get('button[type="submit"]').should('be.visible').click()
     cy.url({ timeout: 10000 }).should('include', '/admin/users')
-    // Verify we're logged in by checking for admin menu
-    cy.get('nav.admin-menu').should('be.visible')
+    // Verify we're logged in by checking for Bootstrap navbar
+    cy.get('nav.navbar').should('be.visible')
   }, {
     cacheAcrossSpecs: false
   });

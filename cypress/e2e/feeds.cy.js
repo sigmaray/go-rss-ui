@@ -77,7 +77,7 @@ describe('Feed Management', () => {
       cy.url().then((url) => {
         if (url.includes('/admin/feeds/new')) {
           // Still on create page - error should be shown (correct behavior)
-          cy.get('.error').should('be.visible').should('contain', 'Failed to create feed')
+          cy.get('.alert-danger').should('be.visible').should('contain', 'Failed to create feed')
         } else {
           // Redirected to feeds page - this may indicate unique constraint is not enforced
           cy.url().should('include', '/admin/feeds')
@@ -123,7 +123,17 @@ describe('Feed Management', () => {
       cy.get('tbody tr').contains(testFeedUrl).parent('tr').find('form[action*="/delete"] button').click()
       
       cy.url().should('include', '/admin/feeds')
-      cy.get('tbody tr').should('not.contain', testFeedUrl)
+      // Check that the feed is no longer in the table
+      // If table is empty, tbody might not have any tr elements
+      cy.get('tbody').then(($tbody) => {
+        if ($tbody.find('tr').length > 0) {
+          // Table has rows, verify testFeedUrl is not in any of them
+          cy.get('tbody tr').should('not.contain', testFeedUrl)
+        } else {
+          // Table is empty, which is fine - feed was deleted
+          cy.get('tbody').should('exist')
+        }
+      })
     })
 
     it('should cancel delete when confirmation is rejected', () => {

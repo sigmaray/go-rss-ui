@@ -44,7 +44,7 @@ describe('Items Management', () => {
         expect(response.status).to.eq(404)
       })
       // Should show error message
-      cy.get('.error').should('be.visible').should('contain', 'Item not found')
+      cy.get('.alert-danger').should('be.visible').should('contain', 'Item not found')
     })
 
     it('should display item detail page when items exist', () => {
