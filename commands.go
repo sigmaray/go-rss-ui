@@ -88,6 +88,15 @@ func GetDefaultFeeds() []string {
 		"https://www.theguardian.com/international/rss",
 		"https://feeds.nbcnews.com/nbcnews/public/news",
 		"https://www.theguardian.com/world/rss",
+		"https://xkcd.com/atom.xml",
+		"https://fedoramagazine.org/feed/",
+		"https://planet.gnome.org//rss20.xml",
+		"https://hacks.mozilla.org/feed/",
+		"https://www.reddit.com/r/news/.rss",
+		"http://www.reddit.com/.rss",
+		"https://www.reddit.com/r/FoodPorn/.rss",
+		"https://www.reddit.com/r/food/.rss",
+		"https://www.reddit.com/r/Outdoors/.rss",
 	}
 }
 

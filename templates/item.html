@@ -13,7 +13,7 @@
         <div class="card-body">
             <dl class="row">
                 <dt class="col-sm-3">Feed:</dt>
-                <dd class="col-sm-9">{{ if .item.Feed }}{{ .item.Feed.URL }}{{ else }}<span class="text-muted">N/A</span>{{ end }}</dd>
+                <dd class="col-sm-9">{{ if .item.Feed }}<a href="/admin/feeds/{{ .item.Feed.ID }}">{{ .item.Feed.URL }}</a>{{ else }}<span class="text-muted">N/A</span>{{ end }}</dd>
                 
                 {{ if .item.Link }}
                 <dt class="col-sm-3">Link:</dt>
@@ -33,8 +33,17 @@
             
             {{ if .item.Description }}
             <div class="mb-3 item-detail__field">
+                {{ if .item.Content }}
+                {{/* If both Description and Content exist, hide Description in a collapsible details element */}}
+                <details>
+                    <summary><h5 class="d-inline">Description</h5></summary>
+                    <div class="border p-3 bg-light rounded item-detail__field-content mt-2">{{ .item.Description }}</div>
+                </details>
+                {{ else }}
+                {{/* If only Description exists, show it normally */}}
                 <h5>Description</h5>
                 <div class="border p-3 bg-light rounded item-detail__field-content">{{ .item.Description }}</div>
+                {{ end }}
             </div>
             {{ end }}
             
