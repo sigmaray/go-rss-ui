@@ -1,51 +1,54 @@
 {{ define "content" }}
-    <div class="item-detail-section">
-        <a href="/admin/items">Back to Items</a>
+    <div class="mb-3">
+        <a href="/admin/items" class="btn btn-secondary">← Back to Items</a>
     </div>
 
     {{ if .error }}
-    <!-- <div class="error">{{ .error }}</div> -->
+    <!-- <div class="alert alert-danger">{{ .error }}</div> -->
     {{ else }}
-    <h2>{{ .item.Title }}</h2>
-    
-    <div class="item-detail-field">
-        <strong>Feed:</strong> {{ if .item.Feed }}{{ .item.Feed.URL }}{{ else }}N/A{{ end }}
-    </div>
-    
-    {{ if .item.Link }}
-    <div class="item-detail-field">
-        <strong>Link:</strong> <a href="{{ .item.Link }}" target="_blank">{{ .item.Link }}</a>
-    </div>
-    {{ end }}
-    
-    {{ if .item.Author }}
-    <div class="item-detail-field">
-        <strong>Author:</strong> {{ .item.Author }}
-    </div>
-    {{ end }}
-    
-    {{ if .item.PublishedAt }}
-    <div class="item-detail-field">
-        <strong>Published At:</strong> {{ .item.PublishedAt.Format "2006-01-02 15:04:05" }}
-    </div>
-    {{ end }}
-    
-    {{ if .item.Description }}
-    <div class="item-detail-field">
-        <strong>Description:</strong>
-        <div class="item-detail-field-content">{{ .item.Description }}</div>
-    </div>
-    {{ end }}
-    
-    {{ if .item.Content }}
-    <div class="item-detail-field">
-        <strong>Content:</strong>
-        <div class="item-detail-field-content">{{ .item.Content }}</div>
-    </div>
-    {{ end }}
-    
-    <div class="item-detail-actions">
-        <a href="/admin/items">Back to Items</a>
+    <div class="card item-detail">
+        <div class="card-header">
+            <h2 class="card-title mb-0">{{ .item.Title }}</h2>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Feed:</dt>
+                <dd class="col-sm-9">{{ if .item.Feed }}{{ .item.Feed.URL }}{{ else }}<span class="text-muted">N/A</span>{{ end }}</dd>
+                
+                {{ if .item.Link }}
+                <dt class="col-sm-3">Link:</dt>
+                <dd class="col-sm-9"><a href="{{ .item.Link }}" target="_blank" class="text-break">{{ .item.Link }}</a></dd>
+                {{ end }}
+                
+                {{ if .item.Author }}
+                <dt class="col-sm-3">Author:</dt>
+                <dd class="col-sm-9">{{ .item.Author }}</dd>
+                {{ end }}
+                
+                {{ if .item.PublishedAt }}
+                <dt class="col-sm-3">Published At:</dt>
+                <dd class="col-sm-9">{{ .item.PublishedAt.Format "2006-01-02 15:04:05" }}</dd>
+                {{ end }}
+            </dl>
+            
+            {{ if .item.Description }}
+            <div class="mb-3 item-detail__field">
+                <h5>Description</h5>
+                <div class="border p-3 bg-light rounded item-detail__field-content">{{ .item.Description }}</div>
+            </div>
+            {{ end }}
+            
+            {{ if .item.Content }}
+            <div class="mb-3 item-detail__field">
+                <h5>Content</h5>
+                <div class="border p-3 bg-light rounded item-detail__field-content">{{ .item.Content }}</div>
+            </div>
+            {{ end }}
+            
+            <div class="mt-3 item-detail__actions">
+                <a href="/admin/items" class="btn btn-secondary">← Back to Items</a>
+            </div>
+        </div>
     </div>
     {{ end }}
 {{ end }}

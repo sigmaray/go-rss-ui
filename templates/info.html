@@ -1,77 +1,87 @@
 {{ define "content" }}
-<div class="info-container">
-    <h2>System Statistics</h2>
-    
-    <div class="info-section">
-        <h3>Database Statistics</h3>
-        <table class="info-table">
-            <tr>
-                <td><strong>Total Feeds:</strong></td>
-                <td>{{ .feedsCount }}</td>
-            </tr>
-            <tr>
-                <td><strong>Total Items:</strong></td>
-                <td>{{ .itemsCount }}</td>
-            </tr>
-        </table>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Database Statistics</h3>
+        </div>
+        <div class="card-body">
+            <table class="table table-borderless">
+                <tr>
+                    <td><strong>Total Feeds:</strong></td>
+                    <td>{{ .feedsCount }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Total Items:</strong></td>
+                    <td>{{ .itemsCount }}</td>
+                </tr>
+            </table>
+        </div>
     </div>
 
-    <div class="info-section">
-        <h3>Feed Fetch Status</h3>
-        <table class="info-table">
-            <tr>
-                <td><strong>Last Successful Fetch:</strong></td>
-                <td>
-                    {{ if .lastSuccessTime }}
-                        {{ .lastSuccessTime.Format "2006-01-02 15:04:05" }}
-                        {{ if .lastSuccessFeed.URL }}
-                            <br><small>Feed: {{ .lastSuccessFeed.URL }}</small>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Feed Fetch Status</h3>
+        </div>
+        <div class="card-body">
+            <table class="table table-borderless">
+                <tr>
+                    <td><strong>Last Successful Fetch:</strong></td>
+                    <td>
+                        {{ if .lastSuccessTime }}
+                            {{ .lastSuccessTime.Format "2006-01-02 15:04:05" }}
+                            {{ if .lastSuccessFeed.URL }}
+                                <br><small class="text-muted">Feed: {{ .lastSuccessFeed.URL }}</small>
+                            {{ end }}
+                        {{ else }}
+                            <span class="text-muted fst-italic">Never</span>
                         {{ end }}
-                    {{ else }}
-                        <span class="no-data">Never</span>
-                    {{ end }}
-                </td>
-            </tr>
-            <tr>
-                <td><strong>Last Failed Fetch:</strong></td>
-                <td>
-                    {{ if .lastErrorTime }}
-                        {{ .lastErrorTime.Format "2006-01-02 15:04:05" }}
-                        {{ if .lastErrorFeed.URL }}
-                            <br><small>Feed: {{ .lastErrorFeed.URL }}</small>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Last Failed Fetch:</strong></td>
+                    <td>
+                        {{ if .lastErrorTime }}
+                            {{ .lastErrorTime.Format "2006-01-02 15:04:05" }}
+                            {{ if .lastErrorFeed.URL }}
+                                <br><small class="text-muted">Feed: {{ .lastErrorFeed.URL }}</small>
+                            {{ end }}
+                            {{ if .lastError }}
+                                <br><span class="text-danger small">Error: {{ .lastError }}</span>
+                            {{ end }}
+                        {{ else }}
+                            <span class="text-muted fst-italic">Never</span>
                         {{ end }}
-                        {{ if .lastError }}
-                            <br><span class="error-text">Error: {{ .lastError }}</span>
-                        {{ end }}
-                    {{ else }}
-                        <span class="no-data">Never</span>
-                    {{ end }}
-                </td>
-            </tr>
-        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
     </div>
 
-    <div class="info-section">
-        <h3>Environment Variables</h3>
-        <table class="info-table">
-            <thead>
-                <tr>
-                    <th>Variable Name</th>
-                    <th>Value</th>
-                    <th>Description</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{ range .envVars }}
-                <tr>
-                    <td><code>{{ .Name }}</code></td>
-                    <td><code>{{ .Value }}</code></td>
-                    <td>{{ .Description }}</td>
-                </tr>
-                {{ end }}
-            </tbody>
-        </table>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Environment Variables</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Variable Name</th>
+                            <th>Value</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ range .envVars }}
+                        <tr>
+                            <td><code>{{ .Name }}</code></td>
+                            <td><code>{{ .Value }}</code></td>
+                            <td>{{ .Description }}</td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-</div>
 {{ end }}
 

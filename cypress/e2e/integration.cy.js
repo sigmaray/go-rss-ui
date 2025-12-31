@@ -34,7 +34,6 @@ describe('Full Application Flow', () => {
     // Should be redirected to admin panel
     cy.url().should('include', '/admin')
     cy.get('h1').contains('User Management').should('be.visible')
-    cy.get('h2').contains('Users').should('be.visible')
 
     // Verify admin user is listed
     cy.get('tbody tr').should('have.length.at.least', 1)

@@ -1,27 +1,39 @@
 {{ define "pagination" }}
     {{ if gt .page.TotalPages 1 }}
-    <div class="pagination">
-        {{ if and (not .page.First) (gt .prevPage 0) }}
-        <a href="{{ .paginationBaseURL }}?page={{ .prevPage }}" class="pagination-link">Previous</a>
-        {{ end }}
-        
-        {{ range .pages }}
-            {{ if eq . -1 }}
-            <span class="pagination-ellipsis">...</span>
-            {{ else if eq . $.page.Page }}
-            <span class="pagination-current">{{ . }}</span>
-            {{ else }}
-            <a href="{{ $.paginationBaseURL }}?page={{ . }}" class="pagination-link">{{ . }}</a>
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {{ if and (not .page.First) (gt .prevPage 0) }}
+            <li class="page-item">
+                <a class="page-link" href="{{ .paginationBaseURL }}?page={{ .prevPage }}">Previous</a>
+            </li>
             {{ end }}
-        {{ end }}
-        
-        {{ if and (not .page.Last) (gt .nextPage 0) }}
-        <a href="{{ .paginationBaseURL }}?page={{ .nextPage }}" class="pagination-link">Next</a>
-        {{ end }}
-    </div>
+            
+            {{ range .pages }}
+                {{ if eq . -1 }}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {{ else if eq . $.page.Page }}
+                <li class="page-item active">
+                    <span class="page-link">{{ . }}</span>
+                </li>
+                {{ else }}
+                <li class="page-item">
+                    <a class="page-link" href="{{ $.paginationBaseURL }}?page={{ . }}">{{ . }}</a>
+                </li>
+                {{ end }}
+            {{ end }}
+            
+            {{ if and (not .page.Last) (gt .nextPage 0) }}
+            <li class="page-item">
+                <a class="page-link" href="{{ .paginationBaseURL }}?page={{ .nextPage }}">Next</a>
+            </li>
+            {{ end }}
+        </ul>
+    </nav>
     {{ end }}
     
-    <div class="pagination-info">
+    <div class="text-center text-muted mt-2">
         Page {{ .page.Page }} of {{ .page.TotalPages }} ({{ .page.Total }} total {{ .paginationEntityName }})
     </div>
 {{ end }}

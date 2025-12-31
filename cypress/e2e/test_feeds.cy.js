@@ -60,7 +60,6 @@ describe('Test Feeds Fetch', () => {
     cy.visit('/info')
     cy.url().should('include', '/info')
     cy.get('h1').should('contain', 'System Information')
-    cy.get('h2').should('contain', 'System Statistics')
     
     // Check Database Statistics section
     cy.get('h3').contains('Database Statistics').should('be.visible')

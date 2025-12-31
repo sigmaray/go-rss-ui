@@ -1,83 +1,92 @@
 {{ define "content" }}
-    <h2>Tools</h2>
-    <p>This page is only available when CYPRESS=true</p>
+    <div class="alert alert-warning">This page is only available when CYPRESS=true</div>
 
-    <div class="tools-section">
-        <h3>Database Operations</h3>
-        
-        <div class="tool-item">
-            <form action="/tools/clear-all-tables" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to clear ALL tables? This action cannot be undone.');">
-                <button type="submit" class="btn-danger">Clear All Tables</button>
-            </form>
-            <p class="tool-description">Clears all tables (users, feeds, items)</p>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Database Operations</h3>
         </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <form action="/tools/clear-all-tables" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to clear ALL tables? This action cannot be undone.');">
+                    <button type="submit" class="btn btn-danger">Clear All Tables</button>
+                </form>
+                <p class="text-muted small mt-2">Clears all tables (users, feeds, items)</p>
+            </div>
 
-        <div class="tool-item">
-            <h4>Clear Individual Table</h4>
-            <form action="/tools/clear-table" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to clear this table? This action cannot be undone.');">
-                <select name="name" required>
-                    <option value="">Select table...</option>
-                    <option value="users">users</option>
-                    <option value="feeds">feeds</option>
-                    <option value="items">items</option>
-                </select>
-                <button type="submit" class="btn-danger">Clear Table</button>
-            </form>
-            <p class="tool-description">Clears a specific table (users, feeds, or items)</p>
-        </div>
+            <div class="mb-3">
+                <h5>Clear Individual Table</h5>
+                <form action="/tools/clear-table" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to clear this table? This action cannot be undone.');">
+                    <select name="name" class="form-select d-inline-block w-auto me-2" required>
+                        <option value="">Select table...</option>
+                        <option value="users">users</option>
+                        <option value="feeds">feeds</option>
+                        <option value="items">items</option>
+                    </select>
+                    <button type="submit" class="btn btn-danger">Clear Table</button>
+                </form>
+                <p class="text-muted small mt-2">Clears a specific table (users, feeds, or items)</p>
+            </div>
 
-        <div class="tool-item">
-            <form action="/tools/seed-users" method="post" class="inline-form">
-                <button type="submit">Seed Users</button>
-            </form>
-            <p class="tool-description">Creates test admin user (username: admin, password: password)</p>
-        </div>
+            <div class="mb-3">
+                <form action="/tools/seed-users" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-primary">Seed Users</button>
+                </form>
+                <p class="text-muted small mt-2">Creates test admin user (username: admin, password: password)</p>
+            </div>
 
-        <div class="tool-item">
-            <form action="/tools/seed-feeds" method="post" class="inline-form">
-                <button type="submit">Seed Feeds</button>
-            </form>
-            <p class="tool-description">Creates default RSS feeds (BBC, CNN, Wired)</p>
+            <div class="mb-3">
+                <form action="/tools/seed-feeds" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-primary">Seed Feeds</button>
+                </form>
+                <p class="text-muted small mt-2">Creates default RSS feeds (BBC, CNN, Wired)</p>
+            </div>
         </div>
     </div>
 
-    <div class="tools-section">
-        <h3>Database Management</h3>
-        
-        <div class="tool-item">
-            <form action="/tools/drop-db" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to DROP the database? This action cannot be undone.');">
-                <button type="submit" class="btn-danger">Drop Database</button>
-            </form>
-            <p class="tool-description">Drops the application database</p>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Database Management</h3>
         </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <form action="/tools/drop-db" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to DROP the database? This action cannot be undone.');">
+                    <button type="submit" class="btn btn-danger">Drop Database</button>
+                </form>
+                <p class="text-muted small mt-2">Drops the application database</p>
+            </div>
 
-        <div class="tool-item">
-            <form action="/tools/create-db" method="post" class="inline-form">
-                <button type="submit">Create Database</button>
-            </form>
-            <p class="tool-description">Creates the application database if it doesn't exist</p>
-        </div>
+            <div class="mb-3">
+                <form action="/tools/create-db" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-primary">Create Database</button>
+                </form>
+                <p class="text-muted small mt-2">Creates the application database if it doesn't exist</p>
+            </div>
 
-        <div class="tool-item">
-            <form action="/tools/migrate" method="post" class="inline-form">
-                <button type="submit">Migrate Database</button>
-            </form>
-            <p class="tool-description">Creates tables in the database using AutoMigrate</p>
+            <div class="mb-3">
+                <form action="/tools/migrate" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-primary">Migrate Database</button>
+                </form>
+                <p class="text-muted small mt-2">Creates tables in the database using AutoMigrate</p>
+            </div>
         </div>
     </div>
 
-    <div class="tools-section">
-        <h3>SQL Query</h3>
-        <form action="/tools/execute-sql" method="post" id="sql-form">
-            <div class="form-group">
-                <label for="sql">SQL Query:</label>
-                <textarea id="sql" name="sql" rows="10" cols="80" required class="sql-textarea"></textarea>
-            </div>
-            <div class="form-group">
-                <button type="submit">Execute SQL</button>
-            </div>
-        </form>
-        <div id="sql-result" class="sql-result"></div>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">SQL Query</h3>
+        </div>
+        <div class="card-body">
+            <form action="/tools/execute-sql" method="post" id="sql-form">
+                <div class="mb-3">
+                    <label for="sql" class="form-label">SQL Query:</label>
+                    <textarea id="sql" name="sql" rows="10" class="form-control font-monospace" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary">Execute SQL</button>
+                </div>
+            </form>
+            <div id="sql-result" class="sql-result"></div>
+        </div>
     </div>
 
     <script>
@@ -87,7 +96,7 @@
             const formData = new FormData(form);
             const resultDiv = document.getElementById('sql-result');
             
-            resultDiv.innerHTML = '<p>Executing...</p>';
+            resultDiv.innerHTML = '<div class="alert alert-info">Executing...</div>';
             
             fetch(form.action, {
                 method: 'POST',
@@ -95,10 +104,10 @@
             })
             .then(response => response.json())
             .then(data => {
-                resultDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                resultDiv.innerHTML = '<pre class="sql-result__pre bg-light p-3 border rounded"><code>' + JSON.stringify(data, null, 2) + '</code></pre>';
             })
             .catch(error => {
-                resultDiv.innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+                resultDiv.innerHTML = '<div class="alert alert-danger">Error: ' + error.message + '</div>';
             });
         });
     </script>

@@ -1,391 +1,46 @@
-/* General styles */
-body {
-    font-family: Arial, sans-serif;
+/* ============================================
+   BEM Methodology CSS
+   Block__Element--Modifier
+   ============================================ */
+
+/* ============================================
+   Container Block
+   ============================================ */
+
+.container {
     max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
 }
 
-h1 {
-    margin-bottom: 20px;
-}
-
-h2 {
-    margin-top: 30px;
-    margin-bottom: 15px;
-}
-
-/* Table styles */
-table {
-    border-collapse: collapse;
-    width: 100%;
-    margin-bottom: 20px;
-}
-
-th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-}
-
-th {
-    background-color: #f2f2f2;
-}
-
-/* Form styles */
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-.form-group input {
-    padding: 8px;
-    width: 200px;
-}
-
-form label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-form input[type="text"],
-form input[type="password"] {
-    padding: 8px;
-    width: 200px;
-    margin-bottom: 10px;
-}
-
-form input[type="submit"],
-button {
-    padding: 8px 16px;
-    cursor: pointer;
-}
-
-/* Message styles */
-.error {
-    color: red;
-    margin-bottom: 15px;
-}
-
-.success {
-    color: green;
-    margin-bottom: 15px;
-}
-
-.message {
-    color: red;
-    margin-bottom: 15px;
-}
-
-/* Actions styles */
-.actions {
-    display: flex;
-    gap: 10px;
-}
-
-.actions form {
-    display: inline;
-}
-
-.actions a {
-    padding: 8px 16px;
-    text-decoration: none;
-    background-color: #f0f0f0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    color: #333;
-}
-
-.actions a:hover {
-    background-color: #e0e0e0;
-}
-
-/* Links */
-a {
-    color: #0066cc;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-/* Inline form inputs in table */
-.actions form input[type="text"],
-.actions form input[type="password"] {
-    width: 150px;
-    padding: 5px;
-    margin-right: 5px;
-}
-
-/* Admin menu */
-.admin-menu {
-    background-color: #f5f5f5;
-    /* border-bottom: 2px solid #ddd; */
-    padding: 10px 15px;
-    margin-bottom: 20px;
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-
-.admin-menu a {
-    padding: 8px 16px;
-    text-decoration: none;
-    color: #333;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-}
-
-.admin-menu a:hover {
-    background-color: #e0e0e0;
-    text-decoration: none;
-}
-
-.admin-menu form {
-    display: inline;
-    margin-left: auto;
-}
-
-.admin-menu button {
-    padding: 8px 16px;
-    background-color: #dc3545;
-    color: white;
-    border: 1px solid #dc3545;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.admin-menu button:hover {
-    background-color: #c82333;
-}
-
-/* Items actions */
-.items-actions {
-    margin-bottom: 20px;
-}
-
-.inline-form {
-    display: inline;
-    margin-right: 10px;
-}
-
-.btn-danger {
-    background-color: #dc3545;
-    color: white;
-    border: 1px solid #dc3545;
-}
-
-.btn-danger:hover {
-    background-color: #c82333;
-}
-
-/* Feeds actions */
-.feeds-actions {
-    margin-bottom: 20px;
-}
-
-.btn-link {
-    padding: 8px 16px;
-    text-decoration: none;
-    background-color: #f0f0f0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    color: #333;
-    display: inline-block;
-    margin-right: 10px;
-}
-
-.btn-link:hover {
-    background-color: #e0e0e0;
-    text-decoration: none;
-}
-
-/* Pagination */
-.pagination {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-    justify-content: center;
-    margin: 20px 0;
-    flex-wrap: wrap;
-}
-
-.pagination-link {
-    padding: 8px 12px;
-    text-decoration: none;
-    color: #333;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-}
-
-.pagination-link:hover {
-    background-color: #e0e0e0;
-    text-decoration: none;
-}
-
-.pagination-current {
-    padding: 8px 12px;
-    background-color: #0066cc;
-    color: white;
-    border: 1px solid #0066cc;
-    border-radius: 4px;
-    font-weight: bold;
-}
-
-.pagination-ellipsis {
-    padding: 8px 4px;
-    color: #666;
-}
-
-.pagination-info {
-    text-align: center;
-    color: #666;
-    margin-bottom: 20px;
-}
-
-/* Users actions */
-.users-actions {
-    margin-bottom: 20px;
-}
-
-/* Error text in tables */
-.error-text {
-    color: #dc3545;
-    font-size: 0.9em;
-    max-width: 300px;
-    display: inline-block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-
-/* Item detail page styles */
-.item-detail-section {
-    margin-bottom: 20px;
-}
-
-.item-detail-field {
-    margin-bottom: 10px;
-}
-
-.item-detail-field-content {
-    margin-top: 5px;
-}
-
-.item-detail-actions {
-    margin-top: 20px;
-}
-
-/* Tools page styles */
-.tools-section {
-    margin-bottom: 30px;
-    padding: 20px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-}
-
-.tool-item {
-    margin-bottom: 20px;
-}
-
-.tool-description {
-    margin-top: 5px;
-    color: #666;
-    font-size: 0.9em;
-}
-
-.sql-textarea {
-    width: 100%;
-    font-family: monospace;
-}
+/* ============================================
+   SQL Result Block
+   ============================================ */
 
 .sql-result {
     margin-top: 20px;
 }
 
-.sql-result pre {
-    background: #f5f5f5;
-    padding: 10px;
-    border: 1px solid #ddd;
-    overflow-x: auto;
+.sql-result__pre {
+    max-height: 500px;
+    overflow-y: auto;
 }
 
-/* Tools page additional styles */
-.tool-item h4 {
-    margin-top: 0;
+/* ============================================
+   Item Detail Block
+   ============================================ */
+
+.item-detail {
+    /* Base item detail container - extends Bootstrap card */
+}
+
+.item-detail__field {
     margin-bottom: 10px;
-    font-size: 1em;
-    color: #333;
 }
 
-.tool-item select {
-    padding: 6px 10px;
-    margin-right: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.9em;
+.item-detail__field-content {
+    word-wrap: break-word;
+    margin-top: 5px;
 }
 
-/* Info page styles */
-.info-container {
-    max-width: 1000px;
+.item-detail__actions {
+    margin-top: 20px;
 }
-
-.info-section {
-    margin-bottom: 30px;
-    padding: 20px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: #f9f9f9;
-}
-
-.info-section h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: #333;
-}
-
-.info-table {
-    width: 100%;
-    background-color: white;
-}
-
-.info-table td {
-    padding: 10px;
-    vertical-align: top;
-}
-
-.info-table td:first-child {
-    width: 200px;
-    font-weight: normal;
-}
-
-.info-table code {
-    background-color: #f5f5f5;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-family: monospace;
-    font-size: 0.9em;
-}
-
-.info-table small {
-    color: #666;
-    font-size: 0.85em;
-}
-
-.no-data {
-    color: #999;
-    font-style: italic;
-}
-

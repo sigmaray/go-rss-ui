@@ -1,50 +1,51 @@
 {{ define "content" }}
-    <div class="feeds-actions">
-        <a href="/admin/feeds/new" class="btn-link">Create New Feed</a>
-        <form action="/admin/feeds/seed" method="post" class="inline-form">
-            <button type="submit">Seed Feeds</button>
+    <div class="mb-3">
+        <a href="/admin/feeds/new" class="btn btn-primary">Create New Feed</a>
+        <form action="/admin/feeds/seed" method="post" class="d-inline">
+            <button type="submit" class="btn btn-secondary">Seed Feeds</button>
         </form>
-        <form action="/admin/feeds/delete-all" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to delete ALL feeds? This will also delete all associated items. This action cannot be undone.');">
-            <button type="submit" class="btn-danger">Delete All Feeds</button>
+        <form action="/admin/feeds/delete-all" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete ALL feeds? This will also delete all associated items. This action cannot be undone.');">
+            <button type="submit" class="btn btn-danger">Delete All Feeds</button>
         </form>
     </div>
 
-    <h2>Feeds</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>URL</th>
-                <th>Title</th>
-                <th>Last Successfully Fetched</th>
-                <th>Last Error</th>
-                <th>Last Error At</th>
-                <th>Created At</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{ range .feeds }}
-            <tr>
-                <td>{{ .ID }}</td>
-                <td>{{ .URL }}</td>
-                <td>{{ .Title }}</td>
-                <td>{{ if .LastSuccessfullyFetchedAt }}{{ .LastSuccessfullyFetchedAt.Format "2006-01-02 15:04:05" }}{{ else }}Never{{ end }}</td>
-                <td>{{ if .LastError }}<span class="error-text">{{ .LastError }}{{ else }}—{{ end }}</span></td>
-                <td>{{ if .LastErrorAt }}{{ .LastErrorAt.Format "2006-01-02 15:04:05" }}{{ else }}—{{ end }}</td>
-                <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
-                <td class="actions">
-                    <form action="/admin/feeds/{{ .ID }}/fetch" method="post" class="inline-form">
-                        <button type="submit">Fetch</button>
-                    </form>
-                    <form action="/admin/feeds/{{ .ID }}/delete" method="post" class="inline-form" onsubmit="return confirm('Are you sure you want to delete this feed?');">
-                        <button type="submit" class="btn-danger">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            {{ end }}
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>URL</th>
+                    <th>Title</th>
+                    <th>Last Successfully Fetched</th>
+                    <th>Last Error</th>
+                    <th>Last Error At</th>
+                    <th>Created At</th>
+                    <th width="140">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ range .feeds }}
+                <tr>
+                    <td>{{ .ID }}</td>
+                    <td>{{ .URL }}</td>
+                    <td>{{ .Title }}</td>
+                    <td>{{ if .LastSuccessfullyFetchedAt }}{{ .LastSuccessfullyFetchedAt.Format "2006-01-02 15:04:05" }}{{ else }}<span class="text-muted">Never</span>{{ end }}</td>
+                    <td>{{ if .LastError }}<span class="text-danger small">{{ .LastError }}</span>{{ else }}<span class="text-muted">—</span>{{ end }}</td>
+                    <td>{{ if .LastErrorAt }}{{ .LastErrorAt.Format "2006-01-02 15:04:05" }}{{ else }}<span class="text-muted">—</span>{{ end }}</td>
+                    <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+                    <td>
+                        <form action="/admin/feeds/{{ .ID }}/fetch" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Fetch</button>
+                        </form>
+                        <form action="/admin/feeds/{{ .ID }}/delete" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this feed?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
 
     {{ template "pagination" . }}
 {{ end }}

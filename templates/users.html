@@ -1,34 +1,35 @@
 {{ define "content" }}
-    <div class="users-actions">
-        <a href="/admin/users/new" class="btn-link">Create New User</a>
+    <div class="mb-3">
+        <a href="/admin/users/new" class="btn btn-primary">Create New User</a>
     </div>
 
-    <h2>Users</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Username</th>
-                <th>Created At</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{ range .users }}
-            <tr>
-                <td>{{ .ID }}</td>
-                <td>{{ .Username }}</td>
-                <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
-                <td class="actions">
-                    <a href="/admin/users/{{ .ID }}/edit">Edit</a>
-                    <form action="/admin/users/{{ .ID }}/delete" method="post" onsubmit="return confirm('Are you sure you want to delete this user?');">
-                        <button type="submit">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            {{ end }}
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ range .users }}
+                <tr>
+                    <td>{{ .ID }}</td>
+                    <td>{{ .Username }}</td>
+                    <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+                    <td>
+                        <a href="/admin/users/{{ .ID }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <form action="/admin/users/{{ .ID }}/delete" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
 
     {{ template "pagination" . }}
 {{ end }}
