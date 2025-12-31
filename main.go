@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -1188,9 +1189,24 @@ func showItem(c *gin.Context) {
 		return
 	}
 
+	// Convert Description and Content to template.HTML for safe HTML rendering
+	itemData := gin.H{
+		"ID":                item.ID,
+		"FeedID":           item.FeedID,
+		"Title":             item.Title,
+		"Link":              item.Link,
+		"Author":            item.Author,
+		"PublishedAt":       item.PublishedAt,
+		"CreatedAt":         item.CreatedAt,
+		"UpdatedAt":         item.UpdatedAt,
+		"Feed":              item.Feed,
+		"Description":       template.HTML(item.Description),
+		"Content":           template.HTML(item.Content),
+	}
+
 	data := getTemplateData(c, gin.H{
 		"title": item.Title,
-		"item":  item,
+		"item":  itemData,
 	})
 	c.HTML(http.StatusOK, "item.html", data)
 }
