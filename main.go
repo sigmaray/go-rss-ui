@@ -330,6 +330,7 @@ func main() {
 		tools.POST("/clear-all-tables", clearAllTables)
 		tools.POST("/clear-table", clearTable)
 		tools.POST("/seed-users", seedUsers)
+		tools.POST("/seed-users-and-login", seedUsersAndLogin)
 		tools.POST("/seed-feeds", seedFeeds)
 		tools.POST("/drop-db", dropDB)
 		tools.POST("/create-db", createDB)
@@ -1670,6 +1671,59 @@ func seedUsers(c *gin.Context) {
 
 	session.Save()
 	c.Redirect(http.StatusFound, "/tools")
+}
+
+func seedUsersAndLogin(c *gin.Context) {
+	if !IsCypressMode() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Tools are only available when CYPRESS=true"})
+		return
+	}
+
+	session := sessions.Default(c)
+
+	// Create admin user (same logic as seedUsers)
+	var user User
+	result := DB.Where("username = ?", "admin").First(&user)
+	if result.Error == gorm.ErrRecordNotFound {
+		adminUser := User{Username: "admin", Password: "password"}
+		if err := DB.Create(&adminUser).Error; err != nil {
+			addFlashError(session, "Failed to create admin user: "+err.Error())
+			session.Save()
+			c.Redirect(http.StatusFound, "/tools")
+			return
+		}
+		// Reload user to get the ID
+		if err := DB.Where("username = ?", "admin").First(&user).Error; err != nil {
+			addFlashError(session, "Failed to find created user: "+err.Error())
+			session.Save()
+			c.Redirect(http.StatusFound, "/tools")
+			return
+		}
+	} else if result.Error != nil {
+		addFlashError(session, "Failed to check for existing user: "+result.Error.Error())
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	// Login as admin user
+	session.Set("user", user.ID)
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session in seedUsersAndLogin: %v", err)
+		addFlashError(session, "Failed to save session")
+		session.Save()
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	// Set success message based on whether user was created or already existed
+	if result.Error == gorm.ErrRecordNotFound {
+		addFlashSuccess(session, "Admin user created and logged in successfully")
+	} else {
+		addFlashSuccess(session, "Logged in as admin successfully")
+	}
+	session.Save()
+	c.Redirect(http.StatusFound, "/admin/users")
 }
 
 func executeSQL(c *gin.Context) {
