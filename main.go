@@ -298,6 +298,7 @@ func main() {
 
 		// Feeds routes
 		admin.GET("/feeds", adminFeedsIndex)
+		admin.GET("/feeds/:id", showFeed)
 		admin.GET("/feeds/new", showCreateFeedForm)
 		admin.POST("/feeds", createFeed)
 		admin.POST("/feeds/:id/fetch", fetchSingleFeed)
@@ -938,6 +939,36 @@ func seedFeeds(c *gin.Context) {
 	} else {
 		c.Redirect(http.StatusFound, "/admin/feeds")
 	}
+}
+
+func showFeed(c *gin.Context) {
+	id := c.Param("id")
+	session := sessions.Default(c)
+
+	var feed Feed
+	if err := DB.First(&feed, id).Error; err != nil {
+		addFlashError(session, "Feed not found")
+		session.Save()
+		c.Redirect(http.StatusFound, "/admin/feeds")
+		return
+	}
+
+	// Get items for this feed with pagination
+	var items []Item
+	model := DB.Model(&Item{}).Where("feed_id = ?", feed.ID).Order("created_at DESC")
+	page := Paginator.With(model).Request(c.Request).Response(&items)
+
+	data := gin.H{
+		"title": "Feed Details",
+		"feed":  feed,
+		"items": page.Items,
+	}
+
+	// Add pagination data
+	data = addPaginationData(data, page, fmt.Sprintf("/admin/feeds/%s", id), "items")
+
+	data = getTemplateData(c, data)
+	c.HTML(http.StatusOK, "feed.html", data)
 }
 
 // Item handlers

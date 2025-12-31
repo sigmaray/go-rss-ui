@@ -20,7 +20,7 @@
                     <th>Last Error</th>
                     <th>Last Error At</th>
                     <th>Created At</th>
-                    <th width="140">Actions</th>
+                    <th width="200">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -34,6 +34,7 @@
                     <td>{{ if .LastErrorAt }}{{ .LastErrorAt.Format "2006-01-02 15:04:05" }}{{ else }}<span class="text-muted">—</span>{{ end }}</td>
                     <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
                     <td>
+                        <a href="/admin/feeds/{{ .ID }}" class="btn btn-sm btn-outline-info">View</a>
                         <form action="/admin/feeds/{{ .ID }}/fetch" method="post" class="d-inline">
                             <button type="submit" class="btn btn-sm btn-outline-primary">Fetch</button>
                         </form>
