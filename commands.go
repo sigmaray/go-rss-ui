@@ -92,11 +92,12 @@ func GetDefaultFeeds() []string {
 		"https://fedoramagazine.org/feed/",
 		"https://planet.gnome.org//rss20.xml",
 		"https://hacks.mozilla.org/feed/",
-		"https://www.reddit.com/r/news/.rss",
-		"http://www.reddit.com/.rss",
-		"https://www.reddit.com/r/FoodPorn/.rss",
-		"https://www.reddit.com/r/food/.rss",
-		"https://www.reddit.com/r/Outdoors/.rss",
+		// "https://www.reddit.com/r/news/.rss",
+		// "http://www.reddit.com/.rss",
+		// "https://www.reddit.com/r/FoodPorn/.rss",
+		// "https://www.reddit.com/r/food/.rss",
+		// "https://www.reddit.com/r/Outdoors/.rss",
+		"https://www.reddit.com/r/all/new/.rss",
 	}
 }
 
