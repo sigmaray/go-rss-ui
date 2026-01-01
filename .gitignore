@@ -1,3 +1,6 @@
+tmp/
+go-rss-ui-2
+.lsp
 node_modules/
 cypress/screenshots/
 .env
