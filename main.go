@@ -654,13 +654,17 @@ func showEditUserForm(c *gin.Context) {
 }
 
 func createUser(c *gin.Context) {
-	username := c.PostForm("username")
-	password := c.PostForm("password")
+	// Create input struct from form data
+	input := UserInput{
+		Username: c.PostForm("username"),
+		Password: c.PostForm("password"),
+	}
 
-	if username == "" || password == "" {
+	// Validate input using validator/v10
+	if err := ValidateStruct(input); err != nil {
 		data := getTemplateData(c, gin.H{
 			"title": "Create New User",
-			"error": "Username and password are required",
+			"error": FormatValidationErrors(err),
 		})
 		c.HTML(http.StatusBadRequest, "create_user.html", data)
 		return
@@ -668,7 +672,7 @@ func createUser(c *gin.Context) {
 
 	// Check if username already exists
 	var existingUser User
-	if err := DB.Where("username = ?", username).First(&existingUser).Error; err == nil {
+	if err := DB.Where("username = ?", input.Username).First(&existingUser).Error; err == nil {
 		// User with this username already exists
 		data := getTemplateData(c, gin.H{
 			"title": "Create New User",
@@ -678,7 +682,7 @@ func createUser(c *gin.Context) {
 		return
 	}
 
-	user := User{Username: username, Password: password}
+	user := User{Username: input.Username, Password: input.Password}
 	if err := DB.Create(&user).Error; err != nil {
 		// Check if error is due to unique constraint violation
 		if isUniqueConstraintError(err) {
@@ -718,6 +722,29 @@ func editUser(c *gin.Context) {
 			"user":  user,
 		})
 		c.HTML(http.StatusNotFound, "edit_user.html", data)
+		return
+	}
+
+	// Use current username if not provided, otherwise use new one
+	usernameToValidate := username
+	if usernameToValidate == "" {
+		usernameToValidate = user.Username
+	}
+
+	// Create input struct for validation
+	input := UserInputUpdate{
+		Username: usernameToValidate,
+		Password: password,
+	}
+
+	// Validate input using validator/v10
+	if err := ValidateStruct(input); err != nil {
+		data := getTemplateData(c, gin.H{
+			"title": "Edit User",
+			"error": FormatValidationErrors(err),
+			"user":  user,
+		})
+		c.HTML(http.StatusBadRequest, "edit_user.html", data)
 		return
 	}
 
@@ -813,18 +840,22 @@ func showCreateFeedForm(c *gin.Context) {
 }
 
 func createFeed(c *gin.Context) {
-	feedURL := c.PostForm("url")
+	// Create input struct from form data
+	input := FeedInput{
+		URL: c.PostForm("url"),
+	}
 
-	if feedURL == "" {
+	// Validate input using validator/v10
+	if err := ValidateStruct(input); err != nil {
 		data := getTemplateData(c, gin.H{
 			"title": "Create New Feed",
-			"error": "URL is required",
+			"error": FormatValidationErrors(err),
 		})
 		c.HTML(http.StatusBadRequest, "create_feed.html", data)
 		return
 	}
 
-	feed := Feed{URL: feedURL}
+	feed := Feed{URL: input.URL}
 	if err := DB.Create(&feed).Error; err != nil {
 		data := getTemplateData(c, gin.H{
 			"title": "Create New Feed",
@@ -1189,6 +1220,10 @@ func showItem(c *gin.Context) {
 		return
 	}
 
+	// Sanitize HTML content before displaying (defense in depth - already sanitized when saved)
+	sanitizedDescription := SanitizeHTML(item.Description)
+	sanitizedContent := SanitizeHTML(item.Content)
+	
 	// Convert Description and Content to template.HTML for safe HTML rendering
 	itemData := gin.H{
 		"ID":                item.ID,
@@ -1200,8 +1235,8 @@ func showItem(c *gin.Context) {
 		"CreatedAt":         item.CreatedAt,
 		"UpdatedAt":         item.UpdatedAt,
 		"Feed":              item.Feed,
-		"Description":       template.HTML(item.Description),
-		"Content":           template.HTML(item.Content),
+		"Description":       template.HTML(sanitizedDescription),
+		"Content":           template.HTML(sanitizedContent),
 	}
 
 	data := getTemplateData(c, gin.H{
@@ -1323,12 +1358,15 @@ func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, error
 
 					if result.Error != nil {
 						// Item doesn't exist, create it
+						// Sanitize HTML content before saving
+						description := SanitizeHTML(item.Description)
+						content := SanitizeHTML(getItemContent(item))
 						newItem := Item{
 							FeedID:      feed.ID,
 							Title:       item.Title,
 							Link:        item.Link,
-							Description: item.Description,
-							Content:     getItemContent(item),
+							Description: description,
+							Content:     content,
 							Author:      getItemAuthor(item),
 							PublishedAt: publishedAt,
 							GUID:        guid,
@@ -1346,10 +1384,13 @@ func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, error
 						}
 					} else {
 						// Item exists, update it
+						// Sanitize HTML content before saving
+						description := SanitizeHTML(item.Description)
+						content := SanitizeHTML(getItemContent(item))
 						existingItem.Title = item.Title
 						existingItem.Link = item.Link
-						existingItem.Description = item.Description
-						existingItem.Content = getItemContent(item)
+						existingItem.Description = description
+						existingItem.Content = content
 						existingItem.Author = getItemAuthor(item)
 						if publishedAt != nil {
 							existingItem.PublishedAt = publishedAt
@@ -1447,12 +1488,15 @@ func processSingleFeed(feedID uint) (itemsCreated, itemsUpdated int, err error) 
 
 		if result.Error != nil {
 			// Item doesn't exist, create it
+			// Sanitize HTML content before saving
+			description := SanitizeHTML(item.Description)
+			content := SanitizeHTML(getItemContent(item))
 			newItem := Item{
 				FeedID:      feed.ID,
 				Title:       item.Title,
 				Link:        item.Link,
-				Description: item.Description,
-				Content:     getItemContent(item),
+				Description: description,
+				Content:     content,
 				Author:      getItemAuthor(item),
 				PublishedAt: publishedAt,
 				GUID:        guid,
@@ -1464,10 +1508,13 @@ func processSingleFeed(feedID uint) (itemsCreated, itemsUpdated int, err error) 
 			}
 		} else {
 			// Item exists, update it
+			// Sanitize HTML content before saving
+			description := SanitizeHTML(item.Description)
+			content := SanitizeHTML(getItemContent(item))
 			existingItem.Title = item.Title
 			existingItem.Link = item.Link
-			existingItem.Description = item.Description
-			existingItem.Content = getItemContent(item)
+			existingItem.Description = description
+			existingItem.Content = content
 			existingItem.Author = getItemAuthor(item)
 			if publishedAt != nil {
 				existingItem.PublishedAt = publishedAt
