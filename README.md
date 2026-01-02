@@ -59,6 +59,45 @@ A comprehensive RSS feed management web application built with Go, Gin, Gorm, an
 
 ## Installation
 
+### Option 1: Using Docker Compose (Recommended)
+
+The easiest way to run the application is using Docker Compose:
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd go-rss-ui-2
+   ```
+
+2. Start the application and PostgreSQL database:
+   ```bash
+   docker-compose up -d
+   ```
+
+3. Run database migrations:
+   ```bash
+   docker-compose exec app ./go-rss-ui-2 migrate
+   ```
+
+4. (Optional) Seed default admin user:
+   ```bash
+   docker-compose exec app ./go-rss-ui-2 seed-users
+   ```
+
+The application will be available at `http://localhost:8082`.
+
+To stop the application:
+```bash
+docker-compose down
+```
+
+To view logs:
+```bash
+docker-compose logs -f app
+```
+
+### Option 2: Manual Installation
+
 1. Clone the repository:
    ```bash
    git clone <repository-url>
@@ -91,6 +130,28 @@ A comprehensive RSS feed management web application built with Go, Gin, Gorm, an
    ```
 
 The application will start on `http://localhost:8082` (default port).
+
+### Docker Build
+
+To build the Docker image manually:
+
+```bash
+docker build -t go-rss-ui-2:latest .
+```
+
+To run the container:
+
+```bash
+docker run -d \
+  --name go-rss-ui-app \
+  -p 8082:8082 \
+  -e DB_HOST=postgres \
+  -e DB_USER=postgres \
+  -e DB_PASSWORD=postgres \
+  -e DB_NAME=go_rss_ui_2 \
+  -e DB_PORT=5432 \
+  go-rss-ui-2:latest
+```
 
 ## Configuration
 

@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: go-rss-ui-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: go_rss_ui_2
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - go-rss-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: go-rss-ui-app
+    environment:
+      DB_HOST: postgres
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: go_rss_ui_2
+      DB_PORT: "5432"
+      DB_SSLMODE: disable
+      DB_TIMEZONE: UTC
+      BACKGROUND_FETCH_ENABLED: "true"
+      BACKGROUND_FETCH_INTERVAL: "3600"
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - go-rss-network
+    restart: unless-stopped
+    volumes:
+      # Optional: mount templates and static for development
+      # Uncomment for development hot-reload
+      # - ./templates:/app/templates:ro
+      # - ./static:/app/static:ro
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  go-rss-network:
+    driver: bridge
+

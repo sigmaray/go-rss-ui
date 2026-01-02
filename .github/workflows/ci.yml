@@ -37,6 +37,25 @@ jobs:
       - name: Verify binary exists
         run: test -f tmp/main
 
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+
   test-go:
     name: Run Go Unit Tests
     runs-on: ubuntu-latest
@@ -72,6 +91,13 @@ jobs:
           echo "## Test Coverage" >> $GITHUB_STEP_SUMMARY
           go tool cover -func=coverage.out | grep total | awk '{print "Total coverage: " $3}' >> $GITHUB_STEP_SUMMARY
           go tool cover -func=coverage.out | tail -1
+          # Extract coverage percentage and check threshold (50%)
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          COVERAGE_INT=${COVERAGE%.*}
+          if [ "$COVERAGE_INT" -lt 50 ]; then
+            echo "Warning: Coverage is ${COVERAGE}%, which is below 50% threshold"
+            echo "Note: This is a warning, not a failure. Consider improving test coverage."
+          fi
       
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -79,6 +105,32 @@ jobs:
           name: go-coverage-report
           path: coverage.out
           retention-days: 7
+
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: go-rss-ui-2:latest
+          cache-from: type=registry,ref=go-rss-ui-2:buildcache
+          cache-to: type=inline
+      
+      - name: Verify Docker image
+        run: |
+          docker images go-rss-ui-2:latest
+          docker run --rm go-rss-ui-2:latest --help || true
 
   test:
     name: Run Cypress Tests

@@ -1,0 +1,93 @@
+# golangci-lint configuration file
+# See https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  tests: true
+  skip-dirs:
+    - vendor
+    - node_modules
+    - cypress
+    - tmp
+    - gitignore
+  skip-files:
+    - ".*\\.pb\\.go$"
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - revive
+    - gosec
+    - unconvert
+    - unparam
+    - gocritic
+    - errorlint
+    - exhaustive
+    - gochecknoglobals
+    - goconst
+    - gocyclo
+    - dupl
+    - lll
+    - whitespace
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+  gocyclo:
+    min-complexity: 15
+  goimports:
+    local-prefixes: go-rss-ui-2
+  govet:
+    check-shadowing: true
+  lll:
+    line-length: 140
+  misspell:
+    locale: US
+  revive:
+    min-confidence: 0
+    rules:
+      - name: exported
+        severity: warning
+      - name: var-naming
+        severity: warning
+  unparam:
+    check-exported: false
+  whitespace:
+    multi-if: true
+    multi-func: true
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+        - goconst
+        - gomnd
+    - path: main\.go
+      linters:
+        - gochecknoglobals
+    - text: "Error return value of .((os\\.)?std(out|err)\\..*|.*Close|.*Flush|os\\.Remove(All)?|.*printf?|os\\.(Un)?Setenv). is not checked"
+      linters:
+        - errcheck
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
