@@ -252,12 +252,12 @@ func main() {
 	r.HTMLRender = loadTemplates("./templates")
 
 	r.Static("/static", "./static")
-	
+
 	// Custom handler for test_feeds that checks for error endpoints first
 	// This single handler handles both error endpoints and static files
 	r.GET("/test_feeds/*filepath", func(c *gin.Context) {
 		filepath := c.Param("filepath")
-		
+
 		// Handle error endpoints
 		if filepath == "/error404.xml" {
 			c.Header("Content-Type", "text/plain")
@@ -269,12 +269,19 @@ func main() {
 			c.String(http.StatusInternalServerError, "500 Internal Server Error")
 			return
 		}
-		
+
 		// Serve static file for all other paths
 		c.File("./test_feeds" + filepath)
 	})
 
 	store := cookie.NewStore([]byte("secret"))
+	store.Options(sessions.Options{
+		Path:     "/",
+		MaxAge:   86400 * 30, // 30 days
+		HttpOnly: true,
+		Secure:   false,                // Set to false for HTTP, true for HTTPS
+		SameSite: http.SameSiteLaxMode, // Changed from None to Lax for HTTP compatibility
+	})
 	r.Use(sessions.Sessions("mysession", store))
 	r.Use(AddAuthInfo())
 
@@ -1223,20 +1230,20 @@ func showItem(c *gin.Context) {
 	// Sanitize HTML content before displaying (defense in depth - already sanitized when saved)
 	sanitizedDescription := SanitizeHTML(item.Description)
 	sanitizedContent := SanitizeHTML(item.Content)
-	
+
 	// Convert Description and Content to template.HTML for safe HTML rendering
 	itemData := gin.H{
-		"ID":                item.ID,
-		"FeedID":           item.FeedID,
-		"Title":             item.Title,
-		"Link":              item.Link,
-		"Author":            item.Author,
-		"PublishedAt":       item.PublishedAt,
-		"CreatedAt":         item.CreatedAt,
-		"UpdatedAt":         item.UpdatedAt,
-		"Feed":              item.Feed,
-		"Description":       template.HTML(sanitizedDescription),
-		"Content":           template.HTML(sanitizedContent),
+		"ID":          item.ID,
+		"FeedID":      item.FeedID,
+		"Title":       item.Title,
+		"Link":        item.Link,
+		"Author":      item.Author,
+		"PublishedAt": item.PublishedAt,
+		"CreatedAt":   item.CreatedAt,
+		"UpdatedAt":   item.UpdatedAt,
+		"Feed":        item.Feed,
+		"Description": template.HTML(sanitizedDescription),
+		"Content":     template.HTML(sanitizedContent),
 	}
 
 	data := getTemplateData(c, gin.H{
