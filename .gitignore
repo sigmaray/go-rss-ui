@@ -1,5 +1,5 @@
 tmp/
-go-rss-ui-2
+go-rss-ui
 .lsp
 node_modules/
 cypress/screenshots/

@@ -1,5 +1,5 @@
 {
-  "name": "go-rss-ui-2-cypress-tests",
+  "name": "go-rss-ui-cypress-tests",
   "version": "1.0.0",
   "description": "Cypress tests for Go RSS UI application",
   "main": "index.js",

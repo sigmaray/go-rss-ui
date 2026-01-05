@@ -66,7 +66,7 @@ The easiest way to run the application is using Docker Compose:
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd go-rss-ui-2
+   cd go-rss-ui
    ```
 
 2. Start the application and PostgreSQL database:
@@ -76,12 +76,12 @@ The easiest way to run the application is using Docker Compose:
 
 3. Run database migrations:
    ```bash
-   docker-compose exec app ./go-rss-ui-2 migrate
+   docker-compose exec app ./go-rss-ui migrate
    ```
 
 4. (Optional) Seed default admin user:
    ```bash
-   docker-compose exec app ./go-rss-ui-2 seed-users
+   docker-compose exec app ./go-rss-ui seed-users
    ```
 
 The application will be available at `http://localhost:8082`.
@@ -101,7 +101,7 @@ docker-compose logs -f app
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd go-rss-ui-2
+   cd go-rss-ui
    ```
 
 2. Install Go dependencies:
@@ -136,7 +136,7 @@ The application will start on `http://localhost:8082` (default port).
 To build the Docker image manually:
 
 ```bash
-docker build -t go-rss-ui-2:latest .
+docker build -t go-rss-ui:latest .
 ```
 
 To run the container:
@@ -150,7 +150,7 @@ docker run -d \
   -e DB_PASSWORD=postgres \
   -e DB_NAME=go_rss_ui_2 \
   -e DB_PORT=5432 \
-  go-rss-ui-2:latest
+  go-rss-ui:latest
 ```
 
 ## Configuration
@@ -298,7 +298,7 @@ The Cypress tests cover:
 ## Project Structure
 
 ```
-go-rss-ui-2/
+go-rss-ui/
 ├── main.go              # Application entry point, routes, and handlers
 ├── database.go          # Database connection and setup
 ├── models.go            # Data models (User, Feed, Item)

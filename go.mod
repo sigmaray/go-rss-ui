@@ -1,4 +1,4 @@
-module go-rss-ui-2
+module go-rss-ui
 
 go 1.24.2
 

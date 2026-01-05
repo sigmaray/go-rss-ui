@@ -23,7 +23,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags='-w -s -extldflags "-static"' \
     -a -installsuffix cgo \
-    -o go-rss-ui-2 .
+    -o go-rss-ui .
 
 # Stage 2: Runtime stage
 FROM alpine:latest
@@ -39,7 +39,7 @@ RUN addgroup -g 1000 appuser && \
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=builder /build/go-rss-ui-2 .
+COPY --from=builder /build/go-rss-ui .
 
 # Copy templates and static files
 COPY --from=builder /build/templates ./templates
@@ -59,5 +59,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost:8082/ || exit 1
 
 # Run the application
-CMD ["./go-rss-ui-2"]
+CMD ["./go-rss-ui"]
 

@@ -123,14 +123,14 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
-          tags: go-rss-ui-2:latest
-          cache-from: type=registry,ref=go-rss-ui-2:buildcache
+          tags: go-rss-ui:latest
+          cache-from: type=registry,ref=go-rss-ui:buildcache
           cache-to: type=inline
       
       - name: Verify Docker image
         run: |
-          docker images go-rss-ui-2:latest
-          docker run --rm go-rss-ui-2:latest --help || true
+          docker images go-rss-ui:latest
+          docker run --rm go-rss-ui:latest --help || true
 
   test:
     name: Run Cypress Tests
