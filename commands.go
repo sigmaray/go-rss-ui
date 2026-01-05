@@ -177,7 +177,11 @@ func CommandDropDB() {
 	if err != nil {
 		log.Fatalf("Failed to get database connection: %v", err)
 	}
-	defer sqlDB.Close()
+	defer func() {
+		if err := sqlDB.Close(); err != nil {
+			log.Printf("Error closing database connection: %v", err)
+		}
+	}()
 
 	// Terminate all connections to the target database
 	_, err = sqlDB.Exec(fmt.Sprintf(`
@@ -215,7 +219,11 @@ func CommandCreateDB() {
 	if err != nil {
 		log.Fatalf("Failed to get database connection: %v", err)
 	}
-	defer sqlDB.Close()
+	defer func() {
+		if err := sqlDB.Close(); err != nil {
+			log.Printf("Error closing database connection: %v", err)
+		}
+	}()
 
 	// Check if database already exists
 	var exists bool
@@ -291,7 +299,11 @@ func CommandExecuteSQL() {
 	if err != nil {
 		log.Fatalf("Error executing SQL query: %v", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
 
 	// Get column names
 	columns, err := rows.Columns()

@@ -20,9 +20,13 @@ func init() {
 	validate = validator.New()
 
 	// Register custom validators
-	validate.RegisterValidation("username", validateUsername)
+	if err := validate.RegisterValidation("username", validateUsername); err != nil {
+		panic(fmt.Sprintf("Failed to register username validator: %v", err))
+	}
 	// validate.RegisterValidation("password_strength", validatePasswordStrength)
-	validate.RegisterValidation("http_url", validateHTTPURL)
+	if err := validate.RegisterValidation("http_url", validateHTTPURL); err != nil {
+		panic(fmt.Sprintf("Failed to register http_url validator: %v", err))
+	}
 
 	// Initialize HTML sanitizer with UGC (User Generated Content) policy
 	// This policy allows safe HTML tags while removing dangerous ones

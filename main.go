@@ -346,7 +346,9 @@ func main() {
 		tools.POST("/execute-sql", executeSQL)
 	}
 
-	r.Run(":8082")
+	if err := r.Run(":8082"); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }
 
 func AuthRequired() gin.HandlerFunc {
@@ -370,7 +372,9 @@ func AuthRequired() gin.HandlerFunc {
 			} else {
 				log.Println("Invalid user ID type in session")
 				session.Clear()
-				session.Save()
+				if err := session.Save(); err != nil {
+					log.Printf("Error saving session: %v", err)
+				}
 				c.Redirect(http.StatusFound, "/login")
 				c.Abort()
 				return
@@ -381,7 +385,9 @@ func AuthRequired() gin.HandlerFunc {
 		if result.Error != nil {
 			log.Printf("User with ID %d not found in database, invalidating session", userIDUint)
 			session.Clear()
-			session.Save()
+			if err := session.Save(); err != nil {
+				log.Printf("Error saving session: %v", err)
+			}
 			c.Redirect(http.StatusFound, "/login")
 			c.Abort()
 			return
@@ -609,7 +615,9 @@ func login(c *gin.Context) {
 func logout(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Clear()
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/")
 }
 
@@ -804,20 +812,26 @@ func deleteUser(c *gin.Context) {
 	var user User
 	if err := DB.First(&user, id).Error; err != nil {
 		addFlashError(session, "User not found")
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/admin/users")
 		return
 	}
 
 	if err := DB.Unscoped().Delete(&user).Error; err != nil {
 		addFlashError(session, "Failed to delete user: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/admin/users")
 		return
 	}
 
 	addFlashSuccess(session, "User deleted successfully")
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/admin/users")
 }
 
@@ -887,7 +901,9 @@ func fetchSingleFeed(c *gin.Context) {
 	var feed Feed
 	if err := DB.First(&feed, id).Error; err != nil {
 		addFlashError(session, "Feed not found")
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/admin/feeds")
 		return
 	}
@@ -895,14 +911,18 @@ func fetchSingleFeed(c *gin.Context) {
 	itemsCreated, itemsUpdated, err := processSingleFeed(feed.ID)
 	if err != nil {
 		addFlashError(session, fmt.Sprintf("Failed to fetch feed: %v", err))
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/admin/feeds")
 		return
 	}
 
 	successMsg := fmt.Sprintf("Feed fetched successfully: %d items created, %d items updated", itemsCreated, itemsUpdated)
 	addFlashSuccess(session, successMsg)
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/admin/feeds")
 }
 
@@ -913,7 +933,9 @@ func deleteFeed(c *gin.Context) {
 	var feed Feed
 	if err := DB.First(&feed, id).Error; err != nil {
 		addFlashError(session, "Feed not found")
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/admin/feeds")
 		return
 	}
@@ -921,13 +943,17 @@ func deleteFeed(c *gin.Context) {
 	// Items will be deleted automatically due to CASCADE constraint
 	if err := DB.Unscoped().Delete(&feed).Error; err != nil {
 		addFlashError(session, "Failed to delete feed: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/admin/feeds")
 		return
 	}
 
 	addFlashSuccess(session, "Feed deleted successfully")
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/admin/feeds")
 }
 
@@ -938,13 +964,17 @@ func deleteAllFeeds(c *gin.Context) {
 	result := DB.Unscoped().Delete(&Feed{}, "1 = 1")
 	if result.Error != nil {
 		addFlashError(session, "Failed to delete all feeds")
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/admin/feeds")
 		return
 	}
 
 	addFlashSuccess(session, "All feeds deleted successfully")
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/admin/feeds")
 }
 
@@ -971,7 +1001,9 @@ func seedFeeds(c *gin.Context) {
 	}
 
 	addFlashSuccess(session, successMsg)
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 
 	// Redirect based on where the request came from
 	if c.Request.URL.Path == "/tools/seed-feeds" {
@@ -988,7 +1020,9 @@ func showFeed(c *gin.Context) {
 	var feed Feed
 	if err := DB.First(&feed, id).Error; err != nil {
 		addFlashError(session, "Feed not found")
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/admin/feeds")
 		return
 	}
@@ -1258,18 +1292,17 @@ func deleteAllItems(c *gin.Context) {
 	result := DB.Delete(&Item{}, "1 = 1")
 	if result.Error != nil {
 		addFlashError(session, "Failed to delete all items")
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/admin/items")
 		return
 	}
 	addFlashSuccess(session, "All items deleted successfully")
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/admin/items")
-}
-
-// processFeeds fetches and processes all feeds, returns statistics
-func processFeeds() (itemsCreated, itemsUpdated, errors int) {
-	return processFeedsWithFilter(false)
 }
 
 func processAllFeeds() (itemsCreated, itemsUpdated, errors int) {
@@ -1547,7 +1580,9 @@ func fetchFeedItems(c *gin.Context) {
 
 	if len(feeds) == 0 {
 		addFlashError(session, "No feeds available")
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/admin/items")
 		return
 	}
@@ -1626,27 +1661,35 @@ func clearAllTables(c *gin.Context) {
 	// Clear all tables
 	if err := DB.Exec("TRUNCATE TABLE items CASCADE").Error; err != nil {
 		addFlashError(session, "Failed to clear items: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
 
 	if err := DB.Exec("TRUNCATE TABLE feeds CASCADE").Error; err != nil {
 		addFlashError(session, "Failed to clear feeds: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
 
 	if err := DB.Exec("TRUNCATE TABLE users CASCADE").Error; err != nil {
 		addFlashError(session, "Failed to clear users: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
 
 	addFlashSuccess(session, "All tables cleared successfully")
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/tools")
 }
 
@@ -1661,7 +1704,9 @@ func clearTable(c *gin.Context) {
 
 	if tableName == "" {
 		addFlashError(session, "Table name is required")
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
@@ -1675,7 +1720,9 @@ func clearTable(c *gin.Context) {
 
 	if !validTables[strings.ToLower(tableName)] {
 		addFlashError(session, "Invalid table name. Allowed tables: users, feeds, items")
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
@@ -1693,20 +1740,26 @@ func clearTable(c *gin.Context) {
 		sqlQuery = "TRUNCATE TABLE items CASCADE"
 	default:
 		addFlashError(session, "Invalid table name")
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
 
 	if err := DB.Exec(sqlQuery).Error; err != nil {
 		addFlashError(session, fmt.Sprintf("Failed to clear table %s: %s", tableName, err.Error()))
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
 
 	addFlashSuccess(session, fmt.Sprintf("Table '%s' cleared successfully", tableName))
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/tools")
 }
 
@@ -1725,21 +1778,27 @@ func seedUsers(c *gin.Context) {
 		adminUser := User{Username: "admin", Password: "password"}
 		if err := DB.Create(&adminUser).Error; err != nil {
 			addFlashError(session, "Failed to create admin user: "+err.Error())
-			session.Save()
+			if err := session.Save(); err != nil {
+				log.Printf("Error saving session: %v", err)
+			}
 			c.Redirect(http.StatusFound, "/tools")
 			return
 		}
 		addFlashSuccess(session, "Admin user 'admin' created with password 'password'")
 	} else if result.Error != nil {
 		addFlashError(session, "Failed to check for existing user: "+result.Error.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	} else {
 		addFlashSuccess(session, "Admin user already exists")
 	}
 
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/tools")
 }
 
@@ -1758,20 +1817,26 @@ func seedUsersAndLogin(c *gin.Context) {
 		adminUser := User{Username: "admin", Password: "password"}
 		if err := DB.Create(&adminUser).Error; err != nil {
 			addFlashError(session, "Failed to create admin user: "+err.Error())
-			session.Save()
+			if err := session.Save(); err != nil {
+				log.Printf("Error saving session: %v", err)
+			}
 			c.Redirect(http.StatusFound, "/tools")
 			return
 		}
 		// Reload user to get the ID
 		if err := DB.Where("username = ?", "admin").First(&user).Error; err != nil {
 			addFlashError(session, "Failed to find created user: "+err.Error())
-			session.Save()
+			if err := session.Save(); err != nil {
+				log.Printf("Error saving session: %v", err)
+			}
 			c.Redirect(http.StatusFound, "/tools")
 			return
 		}
 	} else if result.Error != nil {
 		addFlashError(session, "Failed to check for existing user: "+result.Error.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
@@ -1781,7 +1846,9 @@ func seedUsersAndLogin(c *gin.Context) {
 	if err := session.Save(); err != nil {
 		log.Printf("Error saving session in seedUsersAndLogin: %v", err)
 		addFlashError(session, "Failed to save session")
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
@@ -1792,7 +1859,9 @@ func seedUsersAndLogin(c *gin.Context) {
 	} else {
 		addFlashSuccess(session, "Logged in as admin successfully")
 	}
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/admin/users")
 }
 
@@ -1815,7 +1884,11 @@ func executeSQL(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
 
 	// Get column names
 	columns, err := rows.Columns()
@@ -1882,7 +1955,9 @@ func dropDB(c *gin.Context) {
 	})
 	if err != nil {
 		addFlashError(session, "Failed to connect to postgres database: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
@@ -1891,11 +1966,17 @@ func dropDB(c *gin.Context) {
 	sqlDB, err := db.DB()
 	if err != nil {
 		addFlashError(session, "Failed to get database connection: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
-	defer sqlDB.Close()
+	defer func() {
+		if err := sqlDB.Close(); err != nil {
+			log.Printf("Error closing database connection: %v", err)
+		}
+	}()
 
 	// Terminate all connections to the target database
 	_, err = sqlDB.Exec(fmt.Sprintf(`
@@ -1912,13 +1993,17 @@ func dropDB(c *gin.Context) {
 	_, err = sqlDB.Exec(fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, dbname))
 	if err != nil {
 		addFlashError(session, "Failed to drop database: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
 
 	addFlashSuccess(session, fmt.Sprintf("Database '%s' dropped successfully", dbname))
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/tools")
 }
 
@@ -1936,7 +2021,9 @@ func createDB(c *gin.Context) {
 	db, err := gorm.Open(postgres.Open(adminDSN), &gorm.Config{})
 	if err != nil {
 		addFlashError(session, "Failed to connect to postgres database: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
@@ -1945,11 +2032,17 @@ func createDB(c *gin.Context) {
 	sqlDB, err := db.DB()
 	if err != nil {
 		addFlashError(session, "Failed to get database connection: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
-	defer sqlDB.Close()
+	defer func() {
+		if err := sqlDB.Close(); err != nil {
+			log.Printf("Error closing database connection: %v", err)
+		}
+	}()
 
 	// Check if database already exists
 	var exists bool
@@ -1959,14 +2052,18 @@ func createDB(c *gin.Context) {
 	).Scan(&exists)
 	if err != nil {
 		addFlashError(session, "Failed to check if database exists: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
 
 	if exists {
 		addFlashSuccess(session, fmt.Sprintf("Database '%s' already exists", dbname))
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
@@ -1975,13 +2072,17 @@ func createDB(c *gin.Context) {
 	_, err = sqlDB.Exec(fmt.Sprintf(`CREATE DATABASE "%s"`, dbname))
 	if err != nil {
 		addFlashError(session, "Failed to create database: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
 
 	addFlashSuccess(session, fmt.Sprintf("Database '%s' created successfully", dbname))
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/tools")
 }
 
@@ -1997,7 +2098,9 @@ func migrate(c *gin.Context) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		addFlashError(session, "Failed to connect to database: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
@@ -2006,12 +2109,16 @@ func migrate(c *gin.Context) {
 	err = db.AutoMigrate(&User{}, &Feed{}, &Item{})
 	if err != nil {
 		addFlashError(session, "Failed to migrate database: "+err.Error())
-		session.Save()
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
 		c.Redirect(http.StatusFound, "/tools")
 		return
 	}
 
 	addFlashSuccess(session, "Database migration completed successfully")
-	session.Save()
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
 	c.Redirect(http.StatusFound, "/tools")
 }
