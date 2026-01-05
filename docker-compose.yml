@@ -35,7 +35,7 @@ services:
       DB_SSLMODE: disable
       DB_TIMEZONE: UTC
       BACKGROUND_FETCH_ENABLED: "true"
-      BACKGROUND_FETCH_INTERVAL: "3600"
+      BACKGROUND_FETCH_INTERVAL: "60"
       CYPRESS: "true"
     ports:
       - "8082:8082"
