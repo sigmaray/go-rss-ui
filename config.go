@@ -93,3 +93,26 @@ func IsCypressMode() bool {
 	return value == "true" || value == "1" || value == "yes" || value == "on"
 }
 
+// GetRedisHost returns Redis host from environment variable
+// Returns "localhost" by default
+func GetRedisHost() string {
+	return getEnvOrDefault("REDIS_HOST", "localhost")
+}
+
+// GetRedisPort returns Redis port from environment variable
+// Returns "6379" by default
+func GetRedisPort() string {
+	return getEnvOrDefault("REDIS_PORT", "6379")
+}
+
+// GetRedisPassword returns Redis password from environment variable
+// Returns empty string by default
+func GetRedisPassword() string {
+	return os.Getenv("REDIS_PASSWORD")
+}
+
+// GetRedisAddr returns Redis address in format "host:port"
+func GetRedisAddr() string {
+	return fmt.Sprintf("%s:%s", GetRedisHost(), GetRedisPort())
+}
+

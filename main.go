@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -17,31 +20,125 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/mmcdole/gofeed"
+	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 // LogEntry represents a single log entry
 type LogEntry struct {
-	Timestamp time.Time
-	Type      string // "success" or "error"
-	FeedURL   string
-	Message   string
+	Timestamp time.Time `json:"timestamp"`
+	Type      string    `json:"type"` // "success" or "error"
+	FeedURL   string    `json:"feed_url"`
+	Message   string    `json:"message"`
 }
 
-// In-memory log storage with max 1000 entries
-var (
-	logEntries []LogEntry
-	logMutex   sync.RWMutex
-	maxLogSize = 1000
+const (
+	fetchLogsRedisKey = "app:fetch-logs"
+	maxLogSize        = 1000
 )
 
-// addLogEntry adds a log entry to the in-memory log storage
+// Global logger and Redis client
+var (
+	appLogger   *zerolog.Logger
+	redisClient *redis.Client
+	redisCtx    context.Context
+)
+
+// RedisLogWriter implements io.Writer to write logs to Redis
+type RedisLogWriter struct {
+	client *redis.Client
+	ctx    context.Context
+	key    string
+	maxLen int64
+}
+
+func (w *RedisLogWriter) Write(p []byte) (n int, err error) {
+	// Parse JSON to check log level
+	var logData map[string]interface{}
+	if err := json.Unmarshal(p, &logData); err != nil {
+		return len(p), nil // Ignore parsing errors
+	}
+
+	// Filter only info and error levels
+	level, ok := logData["level"].(string)
+	if !ok {
+		return len(p), nil
+	}
+
+	if level == "info" || level == "error" {
+		// Use pipeline for atomicity
+		pipe := w.client.Pipeline()
+		pipe.LPush(w.ctx, w.key, string(p))
+		pipe.LTrim(w.ctx, w.key, 0, w.maxLen-1)
+		_, _ = pipe.Exec(w.ctx) // Ignore Redis errors to not block logging
+	}
+
+	return len(p), nil
+}
+
+// initLogger initializes zerolog with Redis writer
+func initLogger() {
+	redisCtx = context.Background()
+
+	// Create Redis client
+	redisAddr := GetRedisAddr()
+	password := GetRedisPassword()
+
+	opts := &redis.Options{
+		Addr: redisAddr,
+	}
+	if password != "" {
+		opts.Password = password
+	}
+
+	redisClient = redis.NewClient(opts)
+
+	// Test Redis connection
+	_, err := redisClient.Ping(redisCtx).Result()
+	if err != nil {
+		// If Redis is not available, log to stdout only
+		tempLogger := zerolog.New(os.Stdout).With().
+			Timestamp().
+			Str("service", "go-rss-ui").
+			Logger()
+		tempLogger.Warn().Err(err).Msg("Failed to connect to Redis, logging to stdout only")
+		appLogger = &tempLogger
+		return
+	}
+
+	// Create Redis writer
+	redisWriter := &RedisLogWriter{
+		client: redisClient,
+		ctx:    redisCtx,
+		key:    "app:logs",
+		maxLen: 1000,
+	}
+
+	// MultiWriter: log to both stdout and Redis
+	multi := io.MultiWriter(
+		zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339},
+		redisWriter,
+	)
+
+	logger := zerolog.New(multi).With().
+		Timestamp().
+		Str("service", "go-rss-ui").
+		Logger()
+
+	appLogger = &logger
+	appLogger.Info().Msg("Logger initialized with Redis support")
+}
+
+// addLogEntry adds a log entry to Redis storage
 // Maintains maximum of 1000 entries by removing oldest entries
 func addLogEntry(logType, feedURL, message string) {
-	logMutex.Lock()
-	defer logMutex.Unlock()
+	if redisClient == nil {
+		// If Redis is not available, skip logging
+		return
+	}
 
 	entry := LogEntry{
 		Timestamp: time.Now(),
@@ -50,22 +147,56 @@ func addLogEntry(logType, feedURL, message string) {
 		Message:   message,
 	}
 
-	logEntries = append(logEntries, entry)
-
-	// Keep only the last maxLogSize entries
-	if len(logEntries) > maxLogSize {
-		logEntries = logEntries[len(logEntries)-maxLogSize:]
+	// Serialize to JSON
+	entryJSON, err := json.Marshal(entry)
+	if err != nil {
+		// If serialization fails, log error but don't block
+		if appLogger != nil {
+			appLogger.Error().Err(err).Msg("Failed to serialize log entry")
+		}
+		return
 	}
+
+	// Use pipeline for atomicity
+	pipe := redisClient.Pipeline()
+	pipe.LPush(redisCtx, fetchLogsRedisKey, string(entryJSON))
+	pipe.LTrim(redisCtx, fetchLogsRedisKey, 0, maxLogSize-1)
+	_, _ = pipe.Exec(redisCtx) // Ignore Redis errors to not block execution
 }
 
-// getLogEntries returns a copy of all log entries
+// getLogEntries returns all log entries from Redis
 func getLogEntries() []LogEntry {
-	logMutex.RLock()
-	defer logMutex.RUnlock()
+	var entries []LogEntry
 
-	// Return a copy to prevent external modifications
-	entries := make([]LogEntry, len(logEntries))
-	copy(entries, logEntries)
+	if redisClient == nil {
+		// If Redis is not available, return empty slice
+		return entries
+	}
+
+	// Get logs from Redis (up to 1000 entries)
+	logs, err := redisClient.LRange(redisCtx, fetchLogsRedisKey, 0, maxLogSize-1).Result()
+	if err != nil {
+		// If error occurs, log it but return empty slice
+		if appLogger != nil {
+			appLogger.Error().Err(err).Msg("Failed to get fetch logs from Redis")
+		}
+		return entries
+	}
+
+	// Parse JSON logs
+	// Redis LPUSH adds to the left, so LRANGE 0 999 returns newest first
+	for _, logJSON := range logs {
+		var entry LogEntry
+		if err := json.Unmarshal([]byte(logJSON), &entry); err != nil {
+			// If parsing fails, skip this entry
+			if appLogger != nil {
+				appLogger.Error().Err(err).Msg("Failed to parse fetch log entry")
+			}
+			continue
+		}
+		entries = append(entries, entry)
+	}
+
 	return entries
 }
 
@@ -197,6 +328,9 @@ func main() {
 	// Load environment variables from .env file
 	LoadConfig()
 
+	// Initialize logger with Redis support
+	initLogger()
+
 	// Check for command-line arguments
 	if len(os.Args) > 1 {
 		command := os.Args[1]
@@ -244,7 +378,7 @@ func main() {
 	if GetBackgroundFetchEnabled() {
 		go startBackgroundFeedFetcher()
 	} else {
-		log.Println("Background feed fetcher is disabled")
+		appLogger.Info().Msg("Background feed fetcher is disabled")
 	}
 
 	r := gin.Default()
@@ -325,8 +459,11 @@ func main() {
 	r.POST("/login", login)
 	r.POST("/logout", logout)
 
-	// Logs route (requires authentication)
-	r.GET("/logs", AuthRequired(), showLogs)
+	// Feed fetching log route (requires authentication)
+	r.GET("/feed-fetching-log", AuthRequired(), showLogs)
+
+	// Zerolog route (requires authentication) - shows logs from Redis
+	r.GET("/zerolog", AuthRequired(), showZerolog)
 
 	// Info route (requires authentication)
 	r.GET("/info", AuthRequired(), showInfo)
@@ -347,7 +484,7 @@ func main() {
 	}
 
 	if err := r.Run(":8082"); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		appLogger.Fatal().Err(err).Msg("Failed to start server")
 	}
 }
 
@@ -356,7 +493,7 @@ func AuthRequired() gin.HandlerFunc {
 		session := sessions.Default(c)
 		userID := session.Get("user")
 		if userID == nil {
-			log.Println("User not logged in")
+			appLogger.Debug().Msg("User not logged in")
 			c.Redirect(http.StatusFound, "/login")
 			c.Abort()
 			return
@@ -370,10 +507,10 @@ func AuthRequired() gin.HandlerFunc {
 			if userIDFloat, ok := userID.(float64); ok {
 				userIDUint = uint(userIDFloat)
 			} else {
-				log.Println("Invalid user ID type in session")
+				appLogger.Warn().Msg("Invalid user ID type in session")
 				session.Clear()
 				if err := session.Save(); err != nil {
-					log.Printf("Error saving session: %v", err)
+					appLogger.Error().Err(err).Msg("Error saving session")
 				}
 				c.Redirect(http.StatusFound, "/login")
 				c.Abort()
@@ -383,10 +520,10 @@ func AuthRequired() gin.HandlerFunc {
 
 		result := DB.First(&user, userIDUint)
 		if result.Error != nil {
-			log.Printf("User with ID %d not found in database, invalidating session", userIDUint)
+			appLogger.Warn().Uint("user_id", userIDUint).Msg("User not found in database, invalidating session")
 			session.Clear()
 			if err := session.Save(); err != nil {
-				log.Printf("Error saving session: %v", err)
+				appLogger.Error().Err(err).Msg("Error saving session")
 			}
 			c.Redirect(http.StatusFound, "/login")
 			c.Abort()
@@ -1079,16 +1216,77 @@ func adminItemsIndex(c *gin.Context) {
 
 func showLogs(c *gin.Context) {
 	entries := getLogEntries()
-	// Reverse order to show newest first
-	for i, j := 0, len(entries)-1; i < j; i, j = i+1, j-1 {
-		entries[i], entries[j] = entries[j], entries[i]
-	}
+	// Redis LPUSH adds to the left, so LRANGE 0 999 returns newest first
+	// No need to reverse - newest logs are already at the beginning
 
 	data := getTemplateData(c, gin.H{
-		"title":   "Logs",
+		"title":   "Feed Fetching Log",
 		"entries": entries,
 	})
 	c.HTML(http.StatusOK, "logs.html", data)
+}
+
+// ZerologEntry represents a log entry from Redis
+type ZerologEntry struct {
+	Level   string                 `json:"level"`
+	Time    string                 `json:"time"`
+	Service string                 `json:"service,omitempty"`
+	Message string                 `json:"message"`
+	FeedURL string                 `json:"feed_url,omitempty"`
+	Error   string                 `json:"error,omitempty"`
+	Extra   map[string]interface{} `json:"-"`
+	RawJSON string                 `json:"-"`
+}
+
+func showZerolog(c *gin.Context) {
+	var entries []ZerologEntry
+
+	if redisClient == nil {
+		data := getTemplateData(c, gin.H{
+			"title":   "Zerolog Logs",
+			"entries": entries,
+			"error":   "Redis client is not available",
+		})
+		c.HTML(http.StatusOK, "zerolog.html", data)
+		return
+	}
+
+	// Get logs from Redis (up to 1000 entries)
+	logs, err := redisClient.LRange(redisCtx, "app:logs", 0, 999).Result()
+	if err != nil {
+		appLogger.Error().Err(err).Msg("Failed to get logs from Redis")
+		data := getTemplateData(c, gin.H{
+			"title":   "Zerolog Logs",
+			"entries": entries,
+			"error":   fmt.Sprintf("Failed to get logs from Redis: %v", err),
+		})
+		c.HTML(http.StatusOK, "zerolog.html", data)
+		return
+	}
+
+	// Parse JSON logs
+	// Redis LPUSH adds to the left, so LRANGE 0 999 returns newest first
+	// No need to reverse - newest logs are already at the beginning
+	for _, logJSON := range logs {
+		var entry ZerologEntry
+		if err := json.Unmarshal([]byte(logJSON), &entry); err != nil {
+			// If parsing fails, create a basic entry
+			entry = ZerologEntry{
+				Level:   "unknown",
+				Message: "Failed to parse log entry",
+				RawJSON: logJSON,
+			}
+		} else {
+			entry.RawJSON = logJSON
+		}
+		entries = append(entries, entry)
+	}
+
+	data := getTemplateData(c, gin.H{
+		"title":   "Zerolog Logs",
+		"entries": entries,
+	})
+	c.HTML(http.StatusOK, "zerolog.html", data)
 }
 
 // EnvVarInfo contains information about an environment variable
@@ -1344,7 +1542,7 @@ func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, error
 			for feed := range feedChan {
 				parsedFeed, err := fp.ParseURL(feed.URL)
 				if err != nil {
-					log.Printf("Error parsing feed %s: %v", feed.URL, err)
+					appLogger.Error().Str("feed_url", feed.URL).Err(err).Msg("Error parsing feed")
 					// Update feed with error information
 					now := time.Now()
 					feed.LastError = err.Error()
@@ -1412,7 +1610,7 @@ func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, error
 							GUID:        guid,
 						}
 						if err := DB.Create(&newItem).Error; err != nil {
-							log.Printf("Error creating item: %v", err)
+							appLogger.Error().Err(err).Str("feed_url", feed.URL).Msg("Error creating item")
 							mu.Lock()
 							errors++
 							mu.Unlock()
@@ -1436,7 +1634,7 @@ func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, error
 							existingItem.PublishedAt = publishedAt
 						}
 						if err := DB.Save(&existingItem).Error; err != nil {
-							log.Printf("Error updating item: %v", err)
+							appLogger.Error().Err(err).Str("feed_url", feed.URL).Msg("Error updating item")
 							mu.Lock()
 							errors++
 							mu.Unlock()
@@ -1477,7 +1675,7 @@ func processSingleFeed(feedID uint) (itemsCreated, itemsUpdated int, err error) 
 	fp := gofeed.NewParser()
 	parsedFeed, err := fp.ParseURL(feed.URL)
 	if err != nil {
-		log.Printf("Error parsing feed %s: %v", feed.URL, err)
+		appLogger.Error().Str("feed_url", feed.URL).Err(err).Msg("Error parsing feed")
 		// Update feed with error information
 		now := time.Now()
 		feed.LastError = err.Error()
@@ -1542,7 +1740,7 @@ func processSingleFeed(feedID uint) (itemsCreated, itemsUpdated int, err error) 
 				GUID:        guid,
 			}
 			if err := DB.Create(&newItem).Error; err != nil {
-				log.Printf("Error creating item: %v", err)
+				appLogger.Error().Err(err).Str("feed_url", feed.URL).Msg("Error creating item")
 			} else {
 				feedCreated++
 			}
@@ -1560,7 +1758,7 @@ func processSingleFeed(feedID uint) (itemsCreated, itemsUpdated int, err error) 
 				existingItem.PublishedAt = publishedAt
 			}
 			if err := DB.Save(&existingItem).Error; err != nil {
-				log.Printf("Error updating item: %v", err)
+				appLogger.Error().Err(err).Str("feed_url", feed.URL).Msg("Error updating item")
 			} else {
 				feedUpdated++
 			}
@@ -1607,15 +1805,23 @@ func startBackgroundFeedFetcher() {
 	defer ticker.Stop()
 
 	// Fetch immediately on startup
-	log.Printf("Starting background feed fetcher (interval: %d seconds)", interval)
+	appLogger.Info().Int("interval", interval).Msg("Starting background feed fetcher")
 	itemsCreated, itemsUpdated, errors := processAllFeeds()
-	log.Printf("Initial feed fetch completed: %d created, %d updated, %d errors", itemsCreated, itemsUpdated, errors)
+	appLogger.Info().
+		Int("items_created", itemsCreated).
+		Int("items_updated", itemsUpdated).
+		Int("errors", errors).
+		Msg("Initial feed fetch completed")
 
 	// Then fetch at configured interval
 	for range ticker.C {
-		log.Println("Background feed fetch started")
+		appLogger.Info().Msg("Background feed fetch started")
 		itemsCreated, itemsUpdated, errors := processAllFeeds()
-		log.Printf("Background feed fetch completed: %d created, %d updated, %d errors", itemsCreated, itemsUpdated, errors)
+		appLogger.Info().
+			Int("items_created", itemsCreated).
+			Int("items_updated", itemsUpdated).
+			Int("errors", errors).
+			Msg("Background feed fetch completed")
 	}
 }
 
@@ -1951,7 +2157,7 @@ func dropDB(c *gin.Context) {
 
 	// Connect to postgres database using GORM
 	db, err := gorm.Open(postgres.Open(adminDSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: gormlogger.Default.LogMode(gormlogger.Info),
 	})
 	if err != nil {
 		addFlashError(session, "Failed to connect to postgres database: "+err.Error())

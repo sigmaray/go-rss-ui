@@ -21,6 +21,22 @@ services:
     networks:
       - go-rss-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: go-rss-ui-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - go-rss-network
+    restart: unless-stopped
+
   app:
     build:
       context: .
@@ -34,6 +50,9 @@ services:
       DB_PORT: "5432"
       DB_SSLMODE: disable
       DB_TIMEZONE: UTC
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
       BACKGROUND_FETCH_ENABLED: "true"
       BACKGROUND_FETCH_INTERVAL: "60"
       CYPRESS: "true"
@@ -41,6 +60,8 @@ services:
       - "8082:8082"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - go-rss-network
@@ -53,6 +74,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
 
 networks:

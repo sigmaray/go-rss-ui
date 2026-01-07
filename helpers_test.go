@@ -189,10 +189,13 @@ func TestGeneratePageNumbers(t *testing.T) {
 }
 
 func TestGetLogEntries(t *testing.T) {
-	// Clear log entries before test
-	logMutex.Lock()
-	logEntries = []LogEntry{}
-	logMutex.Unlock()
+	// Skip test if Redis is not available
+	if redisClient == nil {
+		t.Skip("Redis client is not available, skipping test")
+	}
+
+	// Clear log entries before test by deleting the Redis key
+	redisClient.Del(redisCtx, fetchLogsRedisKey)
 
 	// Add some test entries
 	addLogEntry("success", "https://example.com/feed.xml", "Test message 1")
@@ -202,21 +205,32 @@ func TestGetLogEntries(t *testing.T) {
 	entries := getLogEntries()
 
 	assert.Equal(t, 3, len(entries), "Should return 3 log entries")
-	assert.Equal(t, "success", entries[0].Type, "First entry should be success")
+	// Note: Redis LPUSH adds to the left, so newest entries are first
+	// The order will be: message 3, message 2, message 1
+	assert.Equal(t, "success", entries[0].Type, "First entry should be success (newest)")
 	assert.Equal(t, "error", entries[1].Type, "Second entry should be error")
-	assert.Equal(t, "success", entries[2].Type, "Third entry should be success")
+	assert.Equal(t, "success", entries[2].Type, "Third entry should be success (oldest)")
 
-	// Verify entries are copies (modifying shouldn't affect original)
+	// Verify entries are independent (modifying shouldn't affect Redis)
 	entries[0].Type = "modified"
 	entries2 := getLogEntries()
-	assert.Equal(t, "success", entries2[0].Type, "Original entries should not be modified")
+	assert.Greater(t, len(entries2), 0, "Should have entries after modification")
+	if len(entries2) > 0 {
+		assert.Equal(t, "success", entries2[0].Type, "Original entries in Redis should not be modified")
+	}
+
+	// Clean up
+	redisClient.Del(redisCtx, fetchLogsRedisKey)
 }
 
 func TestAddLogEntry(t *testing.T) {
-	// Clear log entries before test
-	logMutex.Lock()
-	logEntries = []LogEntry{}
-	logMutex.Unlock()
+	// Skip test if Redis is not available
+	if redisClient == nil {
+		t.Skip("Redis client is not available, skipping test")
+	}
+
+	// Clear log entries before test by deleting the Redis key
+	redisClient.Del(redisCtx, fetchLogsRedisKey)
 
 	// Add entries with different messages to track which ones are removed
 	for i := 0; i < maxLogSize+10; i++ {
@@ -228,9 +242,13 @@ func TestAddLogEntry(t *testing.T) {
 	// Should only keep maxLogSize entries
 	assert.Equal(t, maxLogSize, len(entries), "Should maintain max log size")
 	
-	// Oldest entries (0-9) should be removed, newest entries (10-1009) should remain
-	// First entry should be "Test message 10" (the 11th entry added)
-	assert.Equal(t, "Test message 10", entries[0].Message, "Oldest entries should be removed, keeping newest")
-	// Last entry should be the last one added
-	assert.Equal(t, fmt.Sprintf("Test message %d", maxLogSize+9), entries[len(entries)-1].Message, "Newest entries should be kept")
+	// Redis LPUSH adds to the left, so newest entries are first
+	// Oldest entries (0-9) should be removed, newest entries (maxLogSize+9 down to 10) should remain
+	// First entry should be the last one added (newest)
+	assert.Equal(t, fmt.Sprintf("Test message %d", maxLogSize+9), entries[0].Message, "Newest entry should be first")
+	// Last entry should be "Test message 10" (the oldest kept entry)
+	assert.Equal(t, "Test message 10", entries[len(entries)-1].Message, "Oldest kept entry should be last")
+
+	// Clean up
+	redisClient.Del(redisCtx, fetchLogsRedisKey)
 }
