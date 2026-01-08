@@ -21,12 +21,12 @@
                 </tr>
             </thead>
             <tbody>
-                {{ range .entries }}
-                <tr class="log-entry log-entry--{{ .Level }}">
+                {{ range $index, $entry := .entries }}
+                <tr class="log-entry log-entry--{{ $entry.Level }}">
                     <td>
-                        {{ if .Time }}
-                            {{ if ne .Time "" }}
-                                {{ .Time }}
+                        {{ if $entry.Time }}
+                            {{ if ne $entry.Time "" }}
+                                {{ $entry.Time }}
                             {{ else }}
                                 <span class="text-muted">N/A</span>
                             {{ end }}
@@ -35,42 +35,43 @@
                         {{ end }}
                     </td>
                     <td>
-                        {{ if eq .Level "info" }}
+                        {{ if eq $entry.Level "info" }}
                             <span class="badge bg-info">INFO</span>
-                        {{ else if eq .Level "error" }}
+                        {{ else if eq $entry.Level "error" }}
                             <span class="badge bg-danger">ERROR</span>
-                        {{ else if eq .Level "warn" }}
+                        {{ else if eq $entry.Level "warn" }}
                             <span class="badge bg-warning text-dark">WARN</span>
-                        {{ else if eq .Level "debug" }}
+                        {{ else if eq $entry.Level "debug" }}
                             <span class="badge bg-secondary">DEBUG</span>
                         {{ else }}
-                            <span class="badge bg-secondary">{{ .Level }}</span>
+                            <span class="badge bg-secondary">{{ $entry.Level }}</span>
                         {{ end }}
                     </td>
                     <td>
-                        {{ if .Service }}
-                            <code>{{ .Service }}</code>
+                        {{ if $entry.Service }}
+                            <code>{{ $entry.Service }}</code>
                         {{ else }}
                             <span class="text-muted">-</span>
                         {{ end }}
                     </td>
                     <td>
-                        <strong>{{ .Message }}</strong>
-                        {{ if .Error }}
-                            <br><small class="text-danger">Error: {{ .Error }}</small>
+                        <strong>{{ $entry.Message }}</strong>
+                        {{ if $entry.Error }}
+                            <br><small class="text-danger">Error: {{ $entry.Error }}</small>
                         {{ end }}
-                        {{ if .FeedURL }}
-                            <br><small class="text-muted">Feed: {{ .FeedURL }}</small>
+                        {{ if $entry.FeedURL }}
+                            <br><small class="text-muted">Feed: {{ $entry.FeedURL }}</small>
                         {{ end }}
                     </td>
                     <td>
-                        {{ if .RawJSON }}
-                            {{ $id := printf "json-%s-%s-%s" .Time .Level .Message }}
-                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#{{ $id }}" aria-expanded="false">
+                        {{ if $entry.RawJSON }}
+                            {{ $id := printf "json-%d" $index }}
+                            <button class="btn btn-sm btn-outline-secondary json-view-btn" type="button" data-bs-toggle="collapse" data-bs-target="#{{ $id }}" aria-expanded="false" data-json-id="{{ $id }}">
                                 View JSON
                             </button>
+                            <div class="d-none json-data" id="{{ $id }}-data">{{ $entry.RawJSON }}</div>
                             <div class="collapse mt-2" id="{{ $id }}">
-                                <pre class="bg-light p-2 rounded small"><code>{{ .RawJSON }}</code></pre>
+                                <pre class="bg-light p-2 rounded small"><code class="json-content"></code></pre>
                             </div>
                         {{ else }}
                             <span class="text-muted">-</span>
@@ -87,5 +88,34 @@
         <br><small>Make sure Redis is running and the logger is properly configured.</small>
     </div>
     {{ end }}
+
+    <script>
+        // Format JSON when collapse is shown
+        document.addEventListener('DOMContentLoaded', function() {
+            const jsonButtons = document.querySelectorAll('.json-view-btn');
+            jsonButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const jsonId = button.getAttribute('data-json-id');
+                    const jsonDataElement = document.getElementById(jsonId + '-data');
+                    const targetId = button.getAttribute('data-bs-target');
+                    const targetElement = document.querySelector(targetId);
+                    
+                    if (jsonDataElement && targetElement) {
+                        const codeElement = targetElement.querySelector('code.json-content');
+                        if (codeElement && !codeElement.textContent.trim()) {
+                            try {
+                                const rawJson = jsonDataElement.textContent.trim();
+                                const jsonObj = JSON.parse(rawJson);
+                                codeElement.textContent = JSON.stringify(jsonObj, null, 2);
+                            } catch (e) {
+                                // If JSON parsing fails, show raw content
+                                codeElement.textContent = jsonDataElement.textContent.trim();
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 {{ end }}
 
