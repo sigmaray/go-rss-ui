@@ -453,17 +453,15 @@ func main() {
 		admin.GET("/items/:id", showItem)
 		admin.POST("/items/fetch", fetchFeedItems)
 		admin.POST("/items/delete-all", deleteAllItems)
+
+		// Logs routes
+		admin.GET("/feed-fetching-log", showLogs)
+		admin.GET("/zerolog", showZerolog)
 	}
 
 	r.GET("/login", showLogin)
 	r.POST("/login", login)
 	r.POST("/logout", logout)
-
-	// Feed fetching log route (requires authentication)
-	r.GET("/feed-fetching-log", AuthRequired(), showLogs)
-
-	// Zerolog route (requires authentication) - shows logs from Redis
-	r.GET("/zerolog", AuthRequired(), showZerolog)
 
 	// Info route (requires authentication)
 	r.GET("/info", AuthRequired(), showInfo)
