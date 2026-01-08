@@ -88,7 +88,7 @@ describe('Feed Management', () => {
     it('should cancel create feed and return to feeds list', () => {
       cy.visit('/admin/feeds/new')
       cy.get('form[action="/admin/feeds"] a[href="/admin/feeds"]').first().click()
-      cy.url().should('eq', 'http://localhost:8082/admin/feeds')
+      cy.url().should('eq', Cypress.config('baseUrl') + '/admin/feeds')
       cy.get('h1').contains('Feed Management').should('be.visible')
     })
   })

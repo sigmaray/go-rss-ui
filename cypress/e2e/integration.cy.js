@@ -43,7 +43,7 @@ describe('Full Application Flow', () => {
     cy.get('form[action="/logout"] button[type="submit"]').click()
 
     // Should be back to home page
-    cy.url().should('eq', 'http://localhost:8082/')
+    cy.url().should('eq', Cypress.config('baseUrl') + '/')
     cy.contains('h1', 'My RSS App').should('be.visible')
   })
 

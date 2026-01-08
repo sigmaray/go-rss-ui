@@ -13,7 +13,7 @@ describe('Test Feeds Fetch', () => {
     
     // Create first test feed using direct form submission
     cy.visit('/admin/feeds/new')
-    cy.get('input[name="url"]').type('http://localhost:8082/test_feeds/test1.xml')
+    cy.get('input[name="url"]').type(Cypress.config('baseUrl') + '/test_feeds/test1.xml')
     cy.get('form[action="/admin/feeds"]').submit()
     cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
     
@@ -21,7 +21,7 @@ describe('Test Feeds Fetch', () => {
     
     // Create second test feed
     cy.visit('/admin/feeds/new')
-    cy.get('input[name="url"]').type('http://localhost:8082/test_feeds/test2.xml')
+    cy.get('input[name="url"]').type(Cypress.config('baseUrl') + '/test_feeds/test2.xml')
     cy.get('form[action="/admin/feeds"]').submit()
     cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
     
@@ -118,14 +118,14 @@ describe('Test Feeds Fetch', () => {
     
     // Create feed with 404 error
     cy.visit('/admin/feeds/new')
-    cy.get('input[name="url"]').type('http://localhost:8082/test_feeds/error404.xml')
+    cy.get('input[name="url"]').type(Cypress.config('baseUrl') + '/test_feeds/error404.xml')
     cy.get('form[action="/admin/feeds"]').submit()
     cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
     cy.get('.alert-success').should('contain', 'Feed created successfully')
     
     // Create feed with 500 error
     cy.visit('/admin/feeds/new')
-    cy.get('input[name="url"]').type('http://localhost:8082/test_feeds/error500.xml')
+    cy.get('input[name="url"]').type(Cypress.config('baseUrl') + '/test_feeds/error500.xml')
     cy.get('form[action="/admin/feeds"]').submit()
     cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
     cy.get('.alert-success').should('contain', 'Feed created successfully')
@@ -198,7 +198,7 @@ describe('Test Feeds Fetch', () => {
     
   //   // Create a test feed
   //   cy.visit('/admin/feeds/new')
-  //   cy.get('input[name="url"]').type('http://localhost:8082/test_feeds/test1.xml')
+  //   cy.get('input[name="url"]').type(Cypress.config('baseUrl') + '/test_feeds/test1.xml')
   //   cy.get('form[action="/admin/feeds"]').submit()
   //   cy.url({ timeout: 10000 }).should('include', '/admin/feeds')
     

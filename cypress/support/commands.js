@@ -103,7 +103,7 @@ Cypress.Commands.add('login', (username = 'admin', password = 'password') => {
 // Custom command to logout
 Cypress.Commands.add('logout', () => {
   cy.get('form[action="/logout"] button[type="submit"]').click()
-  cy.url().should('eq', 'http://localhost:8082/')
+  cy.url().should('eq', Cypress.config('baseUrl') + '/')
 })
 
 // Custom command to check if user is logged in
@@ -113,5 +113,5 @@ Cypress.Commands.add('shouldBeLoggedIn', () => {
 
 // Custom command to check if user is logged out
 Cypress.Commands.add('shouldBeLoggedOut', () => {
-  cy.url().should('eq', 'http://localhost:8082/')
+  cy.url().should('eq', Cypress.config('baseUrl') + '/')
 })

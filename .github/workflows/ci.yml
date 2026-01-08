@@ -215,6 +215,7 @@ jobs:
           DB_PASSWORD: postgres
           DB_NAME: go_rss_ui_test
           DB_PORT: '5432'
+          PORT: '8083'
           CYPRESS: 'true'
           BACKGROUND_FETCH_ENABLED: 'false'
         run: |
@@ -222,11 +223,11 @@ jobs:
           ./tmp/main &
           echo $! > /tmp/app.pid
           sleep 5
-          curl --retry 10 --retry-delay 2 --retry-connrefused http://localhost:8082/ || exit 1
+          curl --retry 10 --retry-delay 2 --retry-connrefused http://localhost:8083/ || exit 1
       
       - name: Run Cypress tests
         env:
-          CYPRESS_BASE_URL: http://localhost:8082
+          CYPRESS_BASE_URL: http://localhost:8083
         run: npx cypress run
       
       - name: Stop application

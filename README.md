@@ -267,14 +267,18 @@ The application supports several CLI commands:
    npm install
    ```
 
-2. Set `CYPRESS=true` environment variable:
+2. Start the web server for Cypress tests with the required environment variables:
    ```bash
-   export CYPRESS=true
+   # Using air (for hot reload during development)
+   PORT=8083 DB_NAME=go_rss_ui_test CYPRESS=1 air
+
+   # Or using go run
+   PORT=8083 DB_NAME=go_rss_ui_test CYPRESS=1 go run .
    ```
 
-3. Make sure the Go application is running on `http://localhost:8082`
+   The server will start on `http://localhost:8083` (as configured in `cypress.config.js`).
 
-4. Run Cypress tests:
+3. Run Cypress tests:
    ```bash
    # Interactive mode
    npm run cypress:open

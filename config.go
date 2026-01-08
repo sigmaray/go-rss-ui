@@ -116,3 +116,18 @@ func GetRedisAddr() string {
 	return fmt.Sprintf("%s:%s", GetRedisHost(), GetRedisPort())
 }
 
+// GetServerPort returns the server port from environment variable
+// Returns 8082 by default if the variable is not set or invalid
+func GetServerPort() string {
+	value := os.Getenv("PORT")
+	if value == "" {
+		return "8082"
+	}
+	// Validate that it's a valid port number
+	port, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil || port <= 0 || port > 65535 {
+		log.Printf("Warning: Invalid PORT value '%s', using default 8082", value)
+		return "8082"
+	}
+	return value
+}

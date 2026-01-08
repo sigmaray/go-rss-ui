@@ -82,7 +82,7 @@ describe('User Management', () => {
     it('should cancel create user and return to users list', () => {
       cy.visit('/admin/users/new')
       cy.get('form[action="/admin/users"] a[href="/admin/users"]').first().click()
-      cy.url().should('eq', 'http://localhost:8082/admin/users')
+      cy.url().should('eq', Cypress.config('baseUrl') + '/admin/users')
       cy.get('h1').contains('User Management').should('be.visible')
     })
   })
@@ -179,7 +179,7 @@ describe('User Management', () => {
     it('should cancel edit and return to users list', () => {
       cy.visit(`/admin/users/${testUserId}/edit`)
       cy.get('form[action*="/edit"] a[href="/admin/users"]').first().click()
-      cy.url().should('eq', 'http://localhost:8082/admin/users')
+      cy.url().should('eq', Cypress.config('baseUrl') + '/admin/users')
       cy.get('h1').contains('User Management').should('be.visible')
     })
 

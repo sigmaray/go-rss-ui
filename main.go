@@ -338,14 +338,15 @@ func generatePageNumbers(currentPage, totalPages int64) []interface{} {
 
 // showStartupInfo displays information about available commands and what the application does
 func showStartupInfo() {
+	port := GetServerPort()
 	fmt.Println("=" + strings.Repeat("=", 70) + "=")
 	fmt.Println("  Go RSS UI Application")
 	fmt.Println("=" + strings.Repeat("=", 70) + "=")
 	fmt.Println()
-	fmt.Println("Starting web server on http://localhost:8082")
+	fmt.Printf("Starting web server on http://localhost:%s\n", port)
 	fmt.Println()
 	fmt.Println("When you run the application without a command, it starts the web server.")
-	fmt.Println("You can access the application in your browser at http://localhost:8082")
+	fmt.Printf("You can access the application in your browser at http://localhost:%s\n", port)
 	fmt.Println()
 	fmt.Println("Available CLI commands:")
 	fmt.Println()
@@ -529,7 +530,8 @@ func main() {
 		tools.POST("/execute-sql", executeSQL)
 	}
 
-	if err := r.Run(":8082"); err != nil {
+	port := GetServerPort()
+	if err := r.Run(":" + port); err != nil {
 		appLogger.Fatal().Err(err).Msg("Failed to start server")
 	}
 }
