@@ -1,0 +1,73 @@
+{{ define "content" }}
+    <div class="mb-4">
+        <h2>Items Created per Hour (Last 24 Hours)</h2>
+        <p class="text-muted">This chart shows how many items were created in each hour over the last 24 hours.</p>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <canvas id="itemsChart" width="400" height="150"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        const ctx = document.getElementById('itemsChart').getContext('2d');
+        const chartData = {
+            labels: [{{ range $index, $label := .chartData.labels }}{{ if $index }}, {{ end }}"{{ $label }}"{{ end }}],
+            datasets: [{
+                label: 'Items Created',
+                data: [{{ range $index, $value := .chartData.data }}{{ if $index }}, {{ end }}{{ $value }}{{ end }}],
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        };
+
+        const config = {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Items Created per Hour'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Items'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Hour'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        };
+
+        new Chart(ctx, config);
+    </script>
+{{ end }}
+

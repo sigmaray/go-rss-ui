@@ -36,8 +36,9 @@ type LogEntry struct {
 }
 
 const (
-	fetchLogsRedisKey = "app:fetch-logs"
-	maxLogSize        = 1000
+	fetchLogsRedisKey    = "app:fetch-logs"
+	itemsCreatedStatsKey = "app:items:created:stats"
+	maxLogSize           = 1000
 )
 
 // Global logger and Redis client
@@ -198,6 +199,50 @@ func getLogEntries() []LogEntry {
 	}
 
 	return entries
+}
+
+// incrementItemsCreatedStats increments the counter for items created in the current hour
+func incrementItemsCreatedStats() {
+	if redisClient == nil {
+		return
+	}
+
+	// Get current hour in format: YYYY-MM-DD-HH
+	now := time.Now()
+	hourKey := fmt.Sprintf("%s:%s", itemsCreatedStatsKey, now.Format("2006-01-02-15"))
+
+	// Increment counter for this hour
+	redisClient.Incr(redisCtx, hourKey)
+
+	// Set expiration to 48 hours (to keep data for 24 hours + buffer)
+	redisClient.Expire(redisCtx, hourKey, 48*time.Hour)
+}
+
+// getItemsCreatedStats returns statistics for items created in the last 24 hours
+// Returns a map where key is hour (format: "YYYY-MM-DD HH:00") and value is count
+func getItemsCreatedStats() map[string]int64 {
+	stats := make(map[string]int64)
+
+	if redisClient == nil {
+		return stats
+	}
+
+	// Get keys for last 24 hours
+	now := time.Now()
+	for i := 0; i < 24; i++ {
+		hourTime := now.Add(-time.Duration(i) * time.Hour)
+		hourKey := fmt.Sprintf("%s:%s", itemsCreatedStatsKey, hourTime.Format("2006-01-02-15"))
+
+		// Get count for this hour
+		count, err := redisClient.Get(redisCtx, hourKey).Int64()
+		if err == nil {
+			// Format hour for display: "YYYY-MM-DD HH:00"
+			displayKey := hourTime.Format("2006-01-02 15:00")
+			stats[displayKey] = count
+		}
+	}
+
+	return stats
 }
 
 // isUniqueConstraintError checks if the error is a unique constraint violation
@@ -457,6 +502,9 @@ func main() {
 		// Logs routes
 		admin.GET("/feed-fetching-log", showLogs)
 		admin.GET("/zerolog", showZerolog)
+
+		// Chart route
+		admin.GET("/chart", showChart)
 	}
 
 	r.GET("/login", showLogin)
@@ -1287,6 +1335,41 @@ func showZerolog(c *gin.Context) {
 	c.HTML(http.StatusOK, "zerolog.html", data)
 }
 
+func showChart(c *gin.Context) {
+	stats := getItemsCreatedStats()
+
+	// Generate all 24 hours (even if no data) for complete chart
+	now := time.Now()
+	labels := make([]string, 24)
+	data := make([]int64, 24)
+
+	// Fill from oldest to newest (last 24 hours)
+	for i := 0; i < 24; i++ {
+		hourTime := now.Add(-time.Duration(23-i) * time.Hour)
+		hourLabel := hourTime.Format("2006-01-02 15:00")
+		labels[i] = hourLabel
+
+		// Get count from stats if available
+		if count, ok := stats[hourLabel]; ok {
+			data[i] = count
+		} else {
+			data[i] = 0
+		}
+	}
+
+	chartData := gin.H{
+		"labels": labels,
+		"data":   data,
+	}
+
+	pageData := getTemplateData(c, gin.H{
+		"title":     "Items Created Chart",
+		"chartData": chartData,
+	})
+
+	c.HTML(http.StatusOK, "chart.html", pageData)
+}
+
 // EnvVarInfo contains information about an environment variable
 type EnvVarInfo struct {
 	Name        string
@@ -1617,6 +1700,8 @@ func processFeedsWithFilter(includeTest bool) (itemsCreated, itemsUpdated, error
 							mu.Lock()
 							itemsCreated++
 							mu.Unlock()
+							// Track item creation statistics
+							incrementItemsCreatedStats()
 						}
 					} else {
 						// Item exists, update it
@@ -1741,6 +1826,8 @@ func processSingleFeed(feedID uint) (itemsCreated, itemsUpdated int, err error) 
 				appLogger.Error().Err(err).Str("feed_url", feed.URL).Msg("Error creating item")
 			} else {
 				feedCreated++
+				// Track item creation statistics
+				incrementItemsCreatedStats()
 			}
 		} else {
 			// Item exists, update it
