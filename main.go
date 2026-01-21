@@ -466,9 +466,33 @@ func main() {
 	r.Use(AddAuthInfo())
 
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", getTemplateData(c, gin.H{
+		var items []Item
+		model := DB.Model(&Item{}).Preload("Feed").Order("created_at DESC")
+		page := Paginator.With(model).Request(c.Request).Response(&items)
+
+		// Sanitize HTML content for each item and convert to template.HTML
+		type ItemWithSanitizedContent struct {
+			Item
+			SanitizedContent template.HTML
+		}
+		itemsWithSanitized := make([]ItemWithSanitizedContent, len(items))
+		for i, item := range items {
+			itemsWithSanitized[i] = ItemWithSanitizedContent{
+				Item:             item,
+				SanitizedContent: template.HTML(SanitizeHTML(item.Content)),
+			}
+		}
+
+		data := gin.H{
 			"title": "My RSS App",
-		}))
+			"items": itemsWithSanitized,
+		}
+
+		// Add pagination data
+		data = addPaginationData(data, page, "/", "items")
+
+		data = getTemplateData(c, data)
+		c.HTML(http.StatusOK, "index.html", data)
 	})
 
 	admin := r.Group("/admin")

@@ -1,5 +1,51 @@
 {{ define "content" }}
-    <div class="text-center">
-        <p><a href="/admin" class="btn btn-primary btn-lg">Go to Admin</a></p>
+    {{ if .items }}
+    <div class="row">
+        {{ range .items }}
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ if .Title }}{{ .Title }}{{ else }}<span class="text-muted">No Title</span>{{ end }}</h5>
+                    
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <strong>Feed:</strong>
+                            {{ if .Feed }}
+                                {{ if .Feed.Title }}{{ .Feed.Title }}{{ else }}{{ .Feed.URL }}{{ end }}
+                                <a href="{{ .Feed.URL }}" target="_blank" class="ms-1">({{ .Feed.URL }})</a>
+                            {{ else }}
+                                <span class="text-muted">N/A</span>
+                            {{ end }}
+                        </small>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            {{ if .PublishedAt }}
+                            <strong>Published:</strong> {{ .PublishedAt.Format "2006-01-02 15:04:05" }}
+                            {{ end }}
+                            {{ if and .PublishedAt .CreatedAt }} | {{ end }}
+                            {{ if .CreatedAt }}
+                            <strong>Created:</strong> {{ .CreatedAt.Format "2006-01-02 15:04:05" }}
+                            {{ end }}
+                        </small>
+                    </div>
+                    
+                    {{ if .SanitizedContent }}
+                    <div class="card-text mt-3">
+                        <div class="border p-3 bg-light rounded">{{ .SanitizedContent }}</div>
+                    </div>
+                    {{ else }}
+                    <p class="card-text text-muted mt-3">No content available</p>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+        {{ end }}
     </div>
+
+    {{ template "pagination" . }}
+    {{ else }}
+    <div class="alert alert-info">No items found.</div>
+    {{ end }}
 {{ end }}
