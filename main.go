@@ -530,14 +530,14 @@ func main() {
 
 		// Chart route
 		admin.GET("/chart", showChart)
+
+		// Info route
+		admin.GET("/info", showInfo)
 	}
 
 	r.GET("/login", showLogin)
 	r.POST("/login", login)
 	r.POST("/logout", logout)
-
-	// Info route (requires authentication)
-	r.GET("/info", AuthRequired(), showInfo)
 
 	// Tools routes (only available when CYPRESS=true)
 	if IsCypressMode() {

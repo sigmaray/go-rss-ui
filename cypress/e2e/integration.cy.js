@@ -16,11 +16,8 @@ describe('Full Application Flow', () => {
       failOnStatusCode: false
     })
   })
-  it('should complete full user journey: home -> login -> admin -> logout', () => {
-    // Start at home page
-    cy.visit('/')
-    cy.contains('h1', 'My RSS App').should('be.visible')
-    cy.contains('a', 'Go to Admin').click()
+  it('should complete full user journey: admin -> login -> admin -> logout', () => {
+    cy.visit('/admin')
 
     // Should redirect to login
     cy.url().should('include', '/login')

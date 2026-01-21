@@ -57,7 +57,7 @@ describe('Test Feeds Fetch', () => {
     cy.get('table tr').should('contain','Test Item C')
     
     // Navigate to info page and verify statistics
-    cy.visit('/info')
+    cy.visit('/admin/info')
     cy.url().should('include', '/info')
     cy.get('h1').should('contain', 'System Information')
     
