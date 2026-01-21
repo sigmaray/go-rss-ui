@@ -549,6 +549,7 @@ func main() {
 		tools.POST("/seed-users-and-login", seedUsersAndLogin)
 		tools.POST("/seed-feeds", seedFeeds)
 		tools.POST("/drop-db", dropDB)
+		tools.POST("/drop-all-tables", dropAllTables)
 		tools.POST("/create-db", createDB)
 		tools.POST("/migrate", migrate)
 		tools.POST("/execute-sql", executeSQL)
@@ -2318,6 +2319,71 @@ func dropDB(c *gin.Context) {
 	}
 
 	addFlashSuccess(session, fmt.Sprintf("Database '%s' dropped successfully", dbname))
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
+	c.Redirect(http.StatusFound, "/tools")
+}
+
+func dropAllTables(c *gin.Context) {
+	if !IsCypressMode() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Tools are only available when CYPRESS=true"})
+		return
+	}
+
+	session := sessions.Default(c)
+
+	// Get list of all tables in the public schema
+	var tables []struct {
+		TableName string `gorm:"column:tablename"`
+	}
+
+	// Query pg_tables to get all user tables in public schema
+	if err := DB.Raw(`
+		SELECT tablename 
+		FROM pg_tables 
+		WHERE schemaname = 'public'
+		ORDER BY tablename
+	`).Scan(&tables).Error; err != nil {
+		addFlashError(session, "Failed to get list of tables: "+err.Error())
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	if len(tables) == 0 {
+		addFlashSuccess(session, "No tables found in database")
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	// Drop all tables using CASCADE to automatically drop dependent objects
+	droppedCount := 0
+	var errors []string
+
+	for _, table := range tables {
+		tableName := table.TableName
+		// Quote table name to handle special characters
+		// Using CASCADE to automatically drop dependent objects (constraints, indexes, etc.)
+		if err := DB.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS "%s" CASCADE`, tableName)).Error; err != nil {
+			errors = append(errors, fmt.Sprintf("%s: %s", tableName, err.Error()))
+		} else {
+			droppedCount++
+		}
+	}
+
+	if len(errors) > 0 {
+		errorMsg := fmt.Sprintf("Dropped %d table(s), but encountered errors: %s", droppedCount, strings.Join(errors, "; "))
+		addFlashError(session, errorMsg)
+	} else {
+		addFlashSuccess(session, fmt.Sprintf("Successfully dropped %d table(s)", droppedCount))
+	}
+
 	if err := session.Save(); err != nil {
 		log.Printf("Error saving session: %v", err)
 	}

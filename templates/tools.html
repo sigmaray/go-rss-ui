@@ -63,6 +63,13 @@
             </div>
 
             <div class="mb-3">
+                <form action="/tools/drop-all-tables" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to DROP ALL tables? This action cannot be undone.');">
+                    <button type="submit" class="btn btn-danger">Drop All Tables</button>
+                </form>
+                <p class="text-muted small mt-2">Drops all tables (users, feeds, items) from the database</p>
+            </div>
+
+            <div class="mb-3">
                 <form action="/tools/create-db" method="post" class="d-inline">
                     <button type="submit" class="btn btn-primary">Create Database</button>
                 </form>
