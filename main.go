@@ -256,6 +256,11 @@ func isUniqueConstraintError(err error) bool {
 func loadTemplates(templatesDir string) multitemplate.Renderer {
 	r := multitemplate.NewRenderer()
 
+	// Define custom template functions
+	funcMap := template.FuncMap{
+		"hasPrefix": strings.HasPrefix,
+	}
+
 	layouts, err := filepath.Glob(templatesDir + "/layouts/*.html")
 	if err != nil {
 		panic(err.Error())
@@ -280,7 +285,8 @@ func loadTemplates(templatesDir string) multitemplate.Renderer {
 		// Include partials in each template
 		files := append(layoutCopy, include)
 		files = append(files, partials...)
-		r.AddFromFiles(filepath.Base(include), files...)
+		// Use AddFromFilesFuncs to add templates with custom functions
+		r.AddFromFilesFuncs(filepath.Base(include), funcMap, files...)
 	}
 
 	return r
@@ -684,6 +690,9 @@ func getTemplateData(c *gin.Context, data gin.H) gin.H {
 	if isCypressMode, exists := c.Get("isCypressMode"); exists {
 		data["isCypressMode"] = isCypressMode
 	}
+
+	// Add current path for active menu highlighting
+	data["currentPath"] = c.Request.URL.Path
 
 	return data
 }

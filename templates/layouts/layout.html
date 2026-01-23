@@ -17,43 +17,43 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
+                        <a class="nav-link{{ if hasPrefix .currentPath "/" }} active{{ end }}" href="/">Home</a>
                     </li>
                     {{ if .isAuthenticated }}
                     {{ if .isCypressMode }}
                     <li class="nav-item">
-                        <a class="nav-link" href="/tools">Tools</a>
+                        <a class="nav-link{{ if hasPrefix .currentPath "/tools" }} active{{ end }}" href="/tools">Tools</a>
                     </li>
                     {{ end }}
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/info">Info</a>
+                        <a class="nav-link{{ if hasPrefix .currentPath "/admin/info" }} active{{ end }}" href="/admin/info">Info</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/users">Users</a>
+                        <a class="nav-link{{ if hasPrefix .currentPath "/admin/users" }} active{{ end }}" href="/admin/users">Users</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/feeds">Feeds</a>
+                        <a class="nav-link{{ if hasPrefix .currentPath "/admin/feeds" }} active{{ end }}" href="/admin/feeds">Feeds</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/items">Items</a>
+                        <a class="nav-link{{ if hasPrefix .currentPath "/admin/items" }} active{{ end }}" href="/admin/items">Items</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/chart">Chart</a>
+                        <a class="nav-link{{ if hasPrefix .currentPath "/admin/chart" }} active{{ end }}" href="/admin/chart">Chart</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/feed-fetching-log">Feed Fetching Log</a>
+                        <a class="nav-link{{ if hasPrefix .currentPath "/admin/feed-fetching-log" }} active{{ end }}" href="/admin/feed-fetching-log">Feed Fetching Log</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/zerolog">Zerolog</a>
+                        <a class="nav-link{{ if hasPrefix .currentPath "/admin/zerolog" }} active{{ end }}" href="/admin/zerolog">Zerolog</a>
                     </li>
                     {{ else }}
                     {{ if .isCypressMode }}
                     <li class="nav-item">
-                        <a class="nav-link" href="/tools">Tools</a>
+                        <a class="nav-link{{ if hasPrefix .currentPath "/tools" }} active{{ end }}" href="/tools">Tools</a>
                     </li>
                     {{ end }}
                     <li class="nav-item">
-                        <a class="nav-link" href="/login">Login</a>
+                        <a class="nav-link{{ if hasPrefix .currentPath "/login" }} active{{ end }}" href="/login">Login</a>
                     </li>
                     {{ end }}
                 </ul>
