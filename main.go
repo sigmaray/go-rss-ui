@@ -152,9 +152,7 @@ func addLogEntry(logType, feedURL, message string) {
 	entryJSON, err := json.Marshal(entry)
 	if err != nil {
 		// If serialization fails, log error but don't block
-		if appLogger != nil {
-			appLogger.Error().Err(err).Msg("Failed to serialize log entry")
-		}
+		appLogger.Error().Err(err).Msg("Failed to serialize log entry")
 		return
 	}
 
@@ -178,9 +176,7 @@ func getLogEntries() []LogEntry {
 	logs, err := redisClient.LRange(redisCtx, fetchLogsRedisKey, 0, maxLogSize-1).Result()
 	if err != nil {
 		// If error occurs, log it but return empty slice
-		if appLogger != nil {
-			appLogger.Error().Err(err).Msg("Failed to get fetch logs from Redis")
-		}
+		appLogger.Error().Err(err).Msg("Failed to get fetch logs from Redis")
 		return entries
 	}
 
@@ -190,9 +186,7 @@ func getLogEntries() []LogEntry {
 		var entry LogEntry
 		if err := json.Unmarshal([]byte(logJSON), &entry); err != nil {
 			// If parsing fails, skip this entry
-			if appLogger != nil {
-				appLogger.Error().Err(err).Msg("Failed to parse fetch log entry")
-			}
+			appLogger.Error().Err(err).Msg("Failed to parse fetch log entry")
 			continue
 		}
 		entries = append(entries, entry)
@@ -358,6 +352,7 @@ func showStartupInfo() {
 	fmt.Println("                Example: go run . execute-sql \"SELECT * FROM feeds\"")
 	fmt.Println("  migrate      - Create tables in database using AutoMigrate")
 	fmt.Println("  drop-db      - Delete the application database")
+	fmt.Println("  drop-all-tables - Drop all tables in the database")
 	fmt.Println("  create-db    - Create the application database")
 	fmt.Println()
 	fmt.Println("Usage examples:")
@@ -391,6 +386,8 @@ func main() {
 			CommandMigrate()
 		case "drop-db":
 			CommandDropDB()
+		case "drop-all-tables":
+			CommandDropAllTables()
 		case "create-db":
 			CommandCreateDB()
 		case "fetch-feeds":
@@ -407,6 +404,7 @@ func main() {
 			fmt.Println("  execute-sql  - Execute SQL query (provide query as argument or via stdin)")
 			fmt.Println("  migrate      - Create tables in database using AutoMigrate")
 			fmt.Println("  drop-db      - Delete the application database")
+			fmt.Println("  drop-all-tables - Drop all tables in the database")
 			fmt.Println("  create-db    - Create the application database")
 			os.Exit(1)
 		}
@@ -2333,19 +2331,9 @@ func dropAllTables(c *gin.Context) {
 
 	session := sessions.Default(c)
 
-	// Get list of all tables in the public schema
-	var tables []struct {
-		TableName string `gorm:"column:tablename"`
-	}
-
-	// Query pg_tables to get all user tables in public schema
-	if err := DB.Raw(`
-		SELECT tablename 
-		FROM pg_tables 
-		WHERE schemaname = 'public'
-		ORDER BY tablename
-	`).Scan(&tables).Error; err != nil {
-		addFlashError(session, "Failed to get list of tables: "+err.Error())
+	result, err := DropAllTables()
+	if err != nil {
+		addFlashError(session, err.Error())
 		if err := session.Save(); err != nil {
 			log.Printf("Error saving session: %v", err)
 		}
@@ -2353,7 +2341,7 @@ func dropAllTables(c *gin.Context) {
 		return
 	}
 
-	if len(tables) == 0 {
+	if len(result.TableNames) == 0 {
 		addFlashSuccess(session, "No tables found in database")
 		if err := session.Save(); err != nil {
 			log.Printf("Error saving session: %v", err)
@@ -2362,26 +2350,11 @@ func dropAllTables(c *gin.Context) {
 		return
 	}
 
-	// Drop all tables using CASCADE to automatically drop dependent objects
-	droppedCount := 0
-	var errors []string
-
-	for _, table := range tables {
-		tableName := table.TableName
-		// Quote table name to handle special characters
-		// Using CASCADE to automatically drop dependent objects (constraints, indexes, etc.)
-		if err := DB.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS "%s" CASCADE`, tableName)).Error; err != nil {
-			errors = append(errors, fmt.Sprintf("%s: %s", tableName, err.Error()))
-		} else {
-			droppedCount++
-		}
-	}
-
-	if len(errors) > 0 {
-		errorMsg := fmt.Sprintf("Dropped %d table(s), but encountered errors: %s", droppedCount, strings.Join(errors, "; "))
+	if len(result.Errors) > 0 {
+		errorMsg := fmt.Sprintf("Dropped %d table(s), but encountered errors: %s", result.DroppedCount, strings.Join(result.Errors, "; "))
 		addFlashError(session, errorMsg)
 	} else {
-		addFlashSuccess(session, fmt.Sprintf("Successfully dropped %d table(s)", droppedCount))
+		addFlashSuccess(session, fmt.Sprintf("Successfully dropped %d table(s)", result.DroppedCount))
 	}
 
 	if err := session.Save(); err != nil {

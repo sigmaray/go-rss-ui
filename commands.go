@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -37,18 +36,10 @@ func CommandClearUsers() {
 
 	result := DB.Exec("DELETE FROM users")
 	if result.Error != nil {
-		if appLogger != nil {
-			appLogger.Fatal().Err(result.Error).Msg("Failed to clear users table")
-		} else {
-			log.Fatalf("Failed to clear users table: %v", result.Error)
-		}
+		appLogger.Fatal().Err(result.Error).Msg("Failed to clear users table")
 	}
 
-	if appLogger != nil {
-		appLogger.Info().Int64("rows_affected", result.RowsAffected).Msg("Successfully cleared users table")
-	} else {
-		log.Printf("Successfully cleared %d records from users table", result.RowsAffected)
-	}
+	appLogger.Info().Int64("rows_affected", result.RowsAffected).Msg("Successfully cleared users table")
 }
 
 // CommandSeedUsers creates a standard admin user
@@ -61,15 +52,11 @@ func CommandSeedUsers() {
 func CommandSeedFeeds() {
 	ConnectDatabase()
 	result := SeedFeeds()
-	if appLogger != nil {
-		appLogger.Info().
-			Int("created", result.Created).
-			Int("existed", result.Existed).
-			Int("errors", result.Errors).
-			Msg("Seeded feeds")
-	} else {
-		log.Printf("Seeded feeds: %d created, %d already existed, %d errors", result.Created, result.Existed, result.Errors)
-	}
+	appLogger.Info().
+		Int("created", result.Created).
+		Int("existed", result.Existed).
+		Int("errors", result.Errors).
+		Msg("Seeded feeds")
 }
 
 // SeedUsers creates admin user if it doesn't exist
@@ -80,29 +67,13 @@ func SeedUsers() {
 	if result.Error == gorm.ErrRecordNotFound {
 		adminUser := User{Username: "admin", Password: "password"}
 		if err := DB.Create(&adminUser).Error; err != nil {
-			if appLogger != nil {
-				appLogger.Fatal().Err(err).Msg("Failed to create admin user")
-			} else {
-				log.Fatalf("Failed to create admin user: %v", err)
-			}
+			appLogger.Fatal().Err(err).Msg("Failed to create admin user")
 		}
-		if appLogger != nil {
-			appLogger.Info().Msg("Admin user 'admin' created with password 'password'")
-		} else {
-			log.Println("Admin user 'admin' created with password 'password'")
-		}
+		appLogger.Info().Msg("Admin user 'admin' created with password 'password'")
 	} else if result.Error != nil {
-		if appLogger != nil {
-			appLogger.Fatal().Err(result.Error).Msg("Failed to check for existing user")
-		} else {
-			log.Fatalf("Failed to check for existing user: %v", result.Error)
-		}
+		appLogger.Fatal().Err(result.Error).Msg("Failed to check for existing user")
 	} else {
-		if appLogger != nil {
-			appLogger.Info().Msg("Admin user already exists")
-		} else {
-			log.Println("Admin user already exists")
-		}
+		appLogger.Info().Msg("Admin user already exists")
 	}
 }
 
@@ -157,33 +128,17 @@ func SeedFeedsWithURLs(feedURLs []string) SeedFeedsResult {
 		if dbResult.Error == gorm.ErrRecordNotFound {
 			feed := Feed{URL: feedURL}
 			if err := DB.Create(&feed).Error; err != nil {
-				if appLogger != nil {
-					appLogger.Error().Err(err).Str("feed_url", feedURL).Msg("Failed to create feed")
-				} else {
-					log.Printf("Failed to create feed %s: %v", feedURL, err)
-				}
+				appLogger.Error().Err(err).Str("feed_url", feedURL).Msg("Failed to create feed")
 				result.Errors++
 			} else {
-				if appLogger != nil {
-					appLogger.Info().Str("feed_url", feedURL).Msg("Feed created")
-				} else {
-					log.Printf("Feed created: %s", feedURL)
-				}
+				appLogger.Info().Str("feed_url", feedURL).Msg("Feed created")
 				result.Created++
 			}
 		} else if dbResult.Error != nil {
-			if appLogger != nil {
-				appLogger.Error().Err(dbResult.Error).Str("feed_url", feedURL).Msg("Failed to check for existing feed")
-			} else {
-				log.Printf("Failed to check for existing feed %s: %v", feedURL, dbResult.Error)
-			}
+			appLogger.Error().Err(dbResult.Error).Str("feed_url", feedURL).Msg("Failed to check for existing feed")
 			result.Errors++
 		} else {
-			if appLogger != nil {
-				appLogger.Debug().Str("feed_url", feedURL).Msg("Feed already exists")
-			} else {
-				log.Printf("Feed already exists: %s", feedURL)
-			}
+			appLogger.Debug().Str("feed_url", feedURL).Msg("Feed already exists")
 			result.Existed++
 		}
 	}
@@ -197,28 +152,106 @@ func CommandMigrate() {
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		if appLogger != nil {
-			appLogger.Fatal().Err(err).Msg("Failed to connect to database")
-		} else {
-			log.Fatalf("Failed to connect to database: %v", err)
-		}
+		appLogger.Fatal().Err(err).Msg("Failed to connect to database")
 	}
 
 	// Run AutoMigrate for all models
 	err = db.AutoMigrate(&User{}, &Feed{}, &Item{})
 	if err != nil {
-		if appLogger != nil {
-			appLogger.Fatal().Err(err).Msg("Failed to migrate database")
+		appLogger.Fatal().Err(err).Msg("Failed to migrate database")
+	}
+
+	appLogger.Info().Msg("Database migration completed successfully")
+}
+
+// DropAllTablesResult contains the result of dropping all tables
+type DropAllTablesResult struct {
+	DroppedCount int
+	Errors       []string
+	TableNames   []string
+}
+
+// DropAllTables drops all tables in the database and returns the result
+// This is a shared function used by both web handler and CLI command
+func DropAllTables() (DropAllTablesResult, error) {
+	// Get list of all tables in the public schema
+	var tables []struct {
+		TableName string `gorm:"column:tablename"`
+	}
+
+	// Query pg_tables to get all user tables in public schema
+	if err := DB.Raw(`
+		SELECT tablename 
+		FROM pg_tables 
+		WHERE schemaname = 'public'
+		ORDER BY tablename
+	`).Scan(&tables).Error; err != nil {
+		return DropAllTablesResult{}, fmt.Errorf("failed to get list of tables: %w", err)
+	}
+
+	result := DropAllTablesResult{
+		TableNames: make([]string, 0, len(tables)),
+	}
+
+	if len(tables) == 0 {
+		return result, nil
+	}
+
+	// Drop all tables using CASCADE to automatically drop dependent objects
+	for _, table := range tables {
+		tableName := table.TableName
+		result.TableNames = append(result.TableNames, tableName)
+		
+		// Quote table name to handle special characters
+		// Using CASCADE to automatically drop dependent objects (constraints, indexes, etc.)
+		if err := DB.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS "%s" CASCADE`, tableName)).Error; err != nil {
+			errorMsg := fmt.Sprintf("%s: %s", tableName, err.Error())
+			result.Errors = append(result.Errors, errorMsg)
 		} else {
-			log.Fatalf("Failed to migrate database: %v", err)
+			result.DroppedCount++
 		}
 	}
 
-	if appLogger != nil {
-		appLogger.Info().Msg("Database migration completed successfully")
-	} else {
-		log.Println("Database migration completed successfully")
+	return result, nil
+}
+
+// CommandDropAllTables drops all tables in the database
+func CommandDropAllTables() {
+	ConnectDatabase()
+
+	result, err := DropAllTables()
+	if err != nil {
+		appLogger.Fatal().Err(err).Msg("Failed to drop all tables")
 	}
+
+	if len(result.TableNames) == 0 {
+		appLogger.Info().Msg("No tables found in database")
+		return
+	}
+
+	// Log each table drop
+	for _, tableName := range result.TableNames {
+		// Check if this table had an error
+		hadError := false
+		for _, errMsg := range result.Errors {
+			if strings.HasPrefix(errMsg, tableName+":") {
+				hadError = true
+				appLogger.Error().Str("table", tableName).Msg("Failed to drop table")
+				break
+			}
+		}
+		if !hadError {
+			appLogger.Info().Str("table", tableName).Msg("Table dropped successfully")
+		}
+	}
+
+	if len(result.Errors) > 0 {
+		errorMsg := fmt.Sprintf("Dropped %d table(s), but encountered errors: %s", result.DroppedCount, strings.Join(result.Errors, "; "))
+		appLogger.Error().Msg(errorMsg)
+		os.Exit(1)
+	}
+
+	appLogger.Info().Int("count", result.DroppedCount).Msg("All tables dropped successfully")
 }
 
 // CommandDropDB drops the application database
@@ -229,17 +262,17 @@ func CommandDropDB() {
 	// Connect to postgres database using GORM
 	db, err := gorm.Open(postgres.Open(adminDSN), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Failed to connect to postgres database: %v", err)
+		appLogger.Fatal().Err(err).Msg("Failed to connect to postgres database")
 	}
 
 	// Get underlying sql.DB
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatalf("Failed to get database connection: %v", err)
+		appLogger.Fatal().Err(err).Msg("Failed to get database connection")
 	}
 	defer func() {
 		if err := sqlDB.Close(); err != nil {
-			log.Printf("Error closing database connection: %v", err)
+			appLogger.Error().Err(err).Msg("Error closing database connection")
 		}
 	}()
 
@@ -251,28 +284,16 @@ func CommandDropDB() {
 		AND pid <> pg_backend_pid();
 	`, dbname))
 	if err != nil {
-		if appLogger != nil {
-			appLogger.Warn().Err(err).Msg("Failed to terminate connections")
-		} else {
-			log.Printf("Warning: Failed to terminate connections: %v", err)
-		}
+		appLogger.Warn().Err(err).Msg("Failed to terminate connections")
 	}
 
 	// Drop the database (quote identifier to handle special characters)
 	_, err = sqlDB.Exec(fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, dbname))
 	if err != nil {
-		if appLogger != nil {
-			appLogger.Fatal().Err(err).Str("database", dbname).Msg("Failed to drop database")
-		} else {
-			log.Fatalf("Failed to drop database: %v", err)
-		}
+		appLogger.Fatal().Err(err).Str("database", dbname).Msg("Failed to drop database")
 	}
 
-	if appLogger != nil {
-		appLogger.Info().Str("database", dbname).Msg("Database dropped successfully")
-	} else {
-		log.Printf("Database '%s' dropped successfully", dbname)
-	}
+	appLogger.Info().Str("database", dbname).Msg("Database dropped successfully")
 }
 
 // CommandCreateDB creates the application database
@@ -283,29 +304,17 @@ func CommandCreateDB() {
 	// Connect to postgres database using GORM
 	db, err := gorm.Open(postgres.Open(adminDSN), &gorm.Config{})
 	if err != nil {
-		if appLogger != nil {
-			appLogger.Fatal().Err(err).Msg("Failed to connect to postgres database")
-		} else {
-			log.Fatalf("Failed to connect to postgres database: %v", err)
-		}
+		appLogger.Fatal().Err(err).Msg("Failed to connect to postgres database")
 	}
 
 	// Get underlying sql.DB
 	sqlDB, err := db.DB()
 	if err != nil {
-		if appLogger != nil {
-			appLogger.Fatal().Err(err).Msg("Failed to get database connection")
-		} else {
-			log.Fatalf("Failed to get database connection: %v", err)
-		}
+		appLogger.Fatal().Err(err).Msg("Failed to get database connection")
 	}
 	defer func() {
 		if err := sqlDB.Close(); err != nil {
-			if appLogger != nil {
-				appLogger.Error().Err(err).Msg("Error closing database connection")
-			} else {
-				log.Printf("Error closing database connection: %v", err)
-			}
+			appLogger.Error().Err(err).Msg("Error closing database connection")
 		}
 	}()
 
@@ -316,58 +325,34 @@ func CommandCreateDB() {
 		dbname,
 	).Scan(&exists)
 	if err != nil {
-		if appLogger != nil {
-			appLogger.Fatal().Err(err).Msg("Failed to check if database exists")
-		} else {
-			log.Fatalf("Failed to check if database exists: %v", err)
-		}
+		appLogger.Fatal().Err(err).Msg("Failed to check if database exists")
 	}
 
 	if exists {
-		if appLogger != nil {
-			appLogger.Info().Str("database", dbname).Msg("Database already exists")
-		} else {
-			log.Printf("Database '%s' already exists", dbname)
-		}
+		appLogger.Info().Str("database", dbname).Msg("Database already exists")
 		return
 	}
 
 	// Create the database (quote identifier to handle special characters)
 	_, err = sqlDB.Exec(fmt.Sprintf(`CREATE DATABASE "%s"`, dbname))
 	if err != nil {
-		if appLogger != nil {
-			appLogger.Fatal().Err(err).Str("database", dbname).Msg("Failed to create database")
-		} else {
-			log.Fatalf("Failed to create database: %v", err)
-		}
+		appLogger.Fatal().Err(err).Str("database", dbname).Msg("Failed to create database")
 	}
 
-	if appLogger != nil {
-		appLogger.Info().Str("database", dbname).Msg("Database created successfully")
-	} else {
-		log.Printf("Database '%s' created successfully", dbname)
-	}
+	appLogger.Info().Str("database", dbname).Msg("Database created successfully")
 }
 
 // CommandFetchFeeds fetches all RSS feeds and processes their items
 func CommandFetchFeeds() {
 	ConnectDatabase()
 
-	if appLogger != nil {
-		appLogger.Info().Msg("Starting feed fetch...")
-	} else {
-		log.Println("Starting feed fetch...")
-	}
+	appLogger.Info().Msg("Starting feed fetch...")
 	itemsCreated, itemsUpdated, errors := processAllFeeds()
-	if appLogger != nil {
-		appLogger.Info().
-			Int("items_created", itemsCreated).
-			Int("items_updated", itemsUpdated).
-			Int("errors", errors).
-			Msg("Feed fetch completed")
-	} else {
-		log.Printf("Feed fetch completed: %d items created, %d items updated, %d errors", itemsCreated, itemsUpdated, errors)
-	}
+	appLogger.Info().
+		Int("items_created", itemsCreated).
+		Int("items_updated", itemsUpdated).
+		Int("errors", errors).
+		Msg("Feed fetch completed")
 }
 
 // CommandExecuteSQL executes a SQL query from command line
@@ -393,58 +378,34 @@ func CommandExecuteSQL() {
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			if appLogger != nil {
-				appLogger.Fatal().Err(err).Msg("Error reading input")
-			} else {
-				log.Fatalf("Error reading input: %v", err)
-			}
+			appLogger.Fatal().Err(err).Msg("Error reading input")
 		}
 		if len(lines) == 0 {
-			if appLogger != nil {
-				appLogger.Fatal().Msg("No SQL query provided")
-			} else {
-				log.Fatal("No SQL query provided")
-			}
+			appLogger.Fatal().Msg("No SQL query provided")
 		}
 		sqlQuery = strings.Join(lines, " ")
 	}
 
 	if strings.TrimSpace(sqlQuery) == "" {
-		if appLogger != nil {
-			appLogger.Fatal().Msg("SQL query cannot be empty")
-		} else {
-			log.Fatal("SQL query cannot be empty")
-		}
+		appLogger.Fatal().Msg("SQL query cannot be empty")
 	}
 
 	// Execute SQL query
 	var results []map[string]interface{}
 	rows, err := DB.Raw(sqlQuery).Rows()
 	if err != nil {
-		if appLogger != nil {
-			appLogger.Fatal().Err(err).Msg("Error executing SQL query")
-		} else {
-			log.Fatalf("Error executing SQL query: %v", err)
-		}
+		appLogger.Fatal().Err(err).Msg("Error executing SQL query")
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
-			if appLogger != nil {
-				appLogger.Error().Err(err).Msg("Error closing rows")
-			} else {
-				log.Printf("Error closing rows: %v", err)
-			}
+			appLogger.Error().Err(err).Msg("Error closing rows")
 		}
 	}()
 
 	// Get column names
 	columns, err := rows.Columns()
 	if err != nil {
-		if appLogger != nil {
-			appLogger.Fatal().Err(err).Msg("Error getting columns")
-		} else {
-			log.Fatalf("Error getting columns: %v", err)
-		}
+		appLogger.Fatal().Err(err).Msg("Error getting columns")
 	}
 
 	// Scan rows
@@ -457,11 +418,7 @@ func CommandExecuteSQL() {
 		}
 
 		if err := rows.Scan(valuePtrs...); err != nil {
-			if appLogger != nil {
-				appLogger.Fatal().Err(err).Msg("Error scanning row")
-			} else {
-				log.Fatalf("Error scanning row: %v", err)
-			}
+			appLogger.Fatal().Err(err).Msg("Error scanning row")
 		}
 
 		// Create a map for this row
@@ -479,11 +436,7 @@ func CommandExecuteSQL() {
 	}
 
 	if err := rows.Err(); err != nil {
-		if appLogger != nil {
-			appLogger.Fatal().Err(err).Msg("Error iterating rows")
-		} else {
-			log.Fatalf("Error iterating rows: %v", err)
-		}
+		appLogger.Fatal().Err(err).Msg("Error iterating rows")
 	}
 
 	// Print results
@@ -554,3 +507,4 @@ func CommandExecuteSQL() {
 		fmt.Println("(No rows returned)")
 	}
 }
+
