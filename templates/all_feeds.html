@@ -1,0 +1,36 @@
+{{ define "content" }}
+    <div class="mb-3">
+        <h2>All Feeds</h2>
+    </div>
+
+    {{ if .feeds }}
+    <div class="row">
+        {{ range .feeds }}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a href="/?feed_id={{ .ID }}" class="text-decoration-none">
+                            {{ if .Title }}{{ .Title }}{{ else }}{{ .URL }}{{ end }}
+                        </a>
+                    </h5>
+                    <p class="card-text">
+                        <small class="text-muted">
+                            <a href="{{ .URL }}" target="_blank" class="text-decoration-none">{{ .URL }}</a>
+                        </small>
+                    </p>
+                    {{ if .Description }}
+                    <p class="card-text">{{ .Description }}</p>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+        {{ end }}
+    </div>
+
+    {{ template "pagination" . }}
+    {{ else }}
+    <div class="alert alert-info">No feeds found.</div>
+    {{ end }}
+{{ end }}
+
