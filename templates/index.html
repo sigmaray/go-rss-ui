@@ -33,7 +33,13 @@
                     
                     {{ if .SanitizedContent }}
                     <div class="card-text mt-3">
-                        <div class="border p-3 bg-light rounded">{{ .SanitizedContent }}</div>
+                        {{ $contentId := printf "content-%d" .ID }}
+                        <div class="item-content">
+                            <div class="item-content__body border p-3 bg-light rounded" id="{{ $contentId }}" style="max-height: 300px; overflow: hidden; position: relative;">
+                                {{ .SanitizedContent }}
+                            </div>
+                            <a href="#" class="item-content__toggle mt-2 d-none" data-content-id="{{ $contentId }}">show more</a>
+                        </div>
                     </div>
                     {{ else }}
                     <p class="card-text text-muted mt-3">No content available</p>
@@ -48,4 +54,61 @@
     {{ else }}
     <div class="alert alert-info">No items found.</div>
     {{ end }}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const contentContainers = document.querySelectorAll('.item-content__body');
+            
+            contentContainers.forEach(function(container) {
+                const contentId = container.id;
+                const showMoreLink = document.querySelector(`.item-content__toggle[data-content-id="${contentId}"]`);
+                
+                if (!showMoreLink) return;
+                
+                // Check if content exceeds 300px
+                const originalHeight = container.scrollHeight;
+                
+                if (originalHeight > 300) {
+                    // Show the "show more" link
+                    showMoreLink.classList.remove('d-none');
+                    
+                    // Store original height
+                    container.dataset.originalHeight = originalHeight;
+                    container.dataset.isExpanded = 'false';
+                    
+                    // Add click handler
+                    showMoreLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        const isExpanded = container.dataset.isExpanded === 'true';
+                        
+                        if (isExpanded) {
+                            // Collapse - first set to current height, then to 400px for smooth transition
+                            const currentHeight = container.scrollHeight;
+                            container.style.maxHeight = currentHeight + 'px';
+                            // Force reflow
+                            container.offsetHeight;
+                            // Now collapse
+                            container.style.maxHeight = '300px';
+                            container.style.overflow = 'hidden';
+                            showMoreLink.textContent = 'show more';
+                            container.dataset.isExpanded = 'false';
+                        } else {
+                            // Expand - first set to current height, then to original height
+                            container.style.maxHeight = container.dataset.originalHeight + 'px';
+                            container.style.overflow = 'visible';
+                            showMoreLink.textContent = 'show less';
+                            container.dataset.isExpanded = 'true';
+                            // After transition, remove max-height restriction for full expansion
+                            setTimeout(function() {
+                                if (container.dataset.isExpanded === 'true') {
+                                    container.style.maxHeight = 'none';
+                                }
+                            }, 300);
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 {{ end }}
