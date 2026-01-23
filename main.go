@@ -1321,11 +1321,15 @@ type ZerologEntry struct {
 func showZerolog(c *gin.Context) {
 	var entries []ZerologEntry
 
+	// Get filter level from query parameter, default to "all"
+	filterLevel := c.DefaultQuery("level", "all")
+
 	if redisClient == nil {
 		data := getTemplateData(c, gin.H{
-			"title":   "Zerolog Logs",
-			"entries": entries,
-			"error":   "Redis client is not available",
+			"title":       "Zerolog Logs",
+			"entries":     entries,
+			"filterLevel": filterLevel,
+			"error":       "Redis client is not available",
 		})
 		c.HTML(http.StatusOK, "zerolog.html", data)
 		return
@@ -1336,9 +1340,10 @@ func showZerolog(c *gin.Context) {
 	if err != nil {
 		appLogger.Error().Err(err).Msg("Failed to get logs from Redis")
 		data := getTemplateData(c, gin.H{
-			"title":   "Zerolog Logs",
-			"entries": entries,
-			"error":   fmt.Sprintf("Failed to get logs from Redis: %v", err),
+			"title":       "Zerolog Logs",
+			"entries":     entries,
+			"filterLevel": filterLevel,
+			"error":       fmt.Sprintf("Failed to get logs from Redis: %v", err),
 		})
 		c.HTML(http.StatusOK, "zerolog.html", data)
 		return
@@ -1359,12 +1364,17 @@ func showZerolog(c *gin.Context) {
 		} else {
 			entry.RawJSON = logJSON
 		}
-		entries = append(entries, entry)
+
+		// Filter by level if not "all"
+		if filterLevel == "all" || strings.EqualFold(entry.Level, filterLevel) {
+			entries = append(entries, entry)
+		}
 	}
 
 	data := getTemplateData(c, gin.H{
-		"title":   "Zerolog Logs",
-		"entries": entries,
+		"title":       "Zerolog Logs",
+		"entries":     entries,
+		"filterLevel": filterLevel,
 	})
 	c.HTML(http.StatusOK, "zerolog.html", data)
 }

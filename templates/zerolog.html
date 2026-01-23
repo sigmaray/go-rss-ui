@@ -5,9 +5,22 @@
     </div>
     {{ end }}
 
+    <div class="mb-3">
+        <div class="btn-group" role="group" aria-label="Filter by log level">
+            <a href="/admin/zerolog?level=all" class="btn {{ if or (not .filterLevel) (eq .filterLevel "all") }}btn-primary{{ else }}btn-outline-primary{{ end }}">All</a>
+            <a href="/admin/zerolog?level=trace" class="btn {{ if eq .filterLevel "trace" }}btn-primary{{ else }}btn-outline-primary{{ end }}">Trace</a>
+            <a href="/admin/zerolog?level=debug" class="btn {{ if eq .filterLevel "debug" }}btn-primary{{ else }}btn-outline-primary{{ end }}">Debug</a>
+            <a href="/admin/zerolog?level=info" class="btn {{ if eq .filterLevel "info" }}btn-primary{{ else }}btn-outline-primary{{ end }}">Info</a>
+            <a href="/admin/zerolog?level=warn" class="btn {{ if eq .filterLevel "warn" }}btn-primary{{ else }}btn-outline-primary{{ end }}">Warn</a>
+            <a href="/admin/zerolog?level=error" class="btn {{ if eq .filterLevel "error" }}btn-primary{{ else }}btn-outline-primary{{ end }}">Error</a>
+            <a href="/admin/zerolog?level=fatal" class="btn {{ if eq .filterLevel "fatal" }}btn-primary{{ else }}btn-outline-primary{{ end }}">Fatal</a>
+            <a href="/admin/zerolog?level=panic" class="btn {{ if eq .filterLevel "panic" }}btn-primary{{ else }}btn-outline-primary{{ end }}">Panic</a>
+        </div>
+    </div>
+
     {{ if .entries }}
     <div class="mb-3">
-        <p class="text-muted">Showing {{ len .entries }} log entries from Redis (info and error levels only)</p>
+        <p class="text-muted">Showing {{ len .entries }} log entries{{ if and .filterLevel (ne .filterLevel "all") }} (filtered by {{ .filterLevel }}){{ end }}</p>
     </div>
     <div class="table-responsive">
         <table class="table table-striped table-hover">
@@ -84,8 +97,13 @@
     </div>
     {{ else }}
     <div class="alert alert-info">
-        <strong>No log entries found.</strong> Logs will appear here once the application starts logging to Redis.
-        <br><small>Make sure Redis is running and the logger is properly configured.</small>
+        <strong>No log entries found.</strong>
+        {{ if and .filterLevel (ne .filterLevel "all") }}
+            <br>No entries found for level "{{ .filterLevel }}". Try selecting a different level or "All".
+        {{ else }}
+            <br>Logs will appear here once the application starts logging to Redis.
+            <br><small>Make sure Redis is running and the logger is properly configured.</small>
+        {{ end }}
     </div>
     {{ end }}
 
