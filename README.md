@@ -111,7 +111,16 @@ docker-compose logs -f app
 
 3. Set up PostgreSQL database and configure the connection string:
    ```bash
-   export DATABASE_URL="host=localhost user=youruser password=yourpass dbname=yourdb port=5432 sslmode=disable"
+   export RSS_DATABASE_URL="host=localhost user=youruser password=yourpass dbname=yourdb port=5432 sslmode=disable"
+   ```
+   Or use individual variables:
+   ```bash
+   export RSS_DB_HOST=localhost
+   export RSS_DB_USER=youruser
+   export RSS_DB_PASSWORD=yourpass
+   export RSS_DB_NAME=yourdb
+   export RSS_DB_PORT=5432
+   export RSS_DB_SSLMODE=disable
    ```
 
 4. Run database migrations:
@@ -145,22 +154,42 @@ To run the container:
 docker run -d \
   --name go-rss-ui-app \
   -p 8082:8082 \
-  -e DB_HOST=postgres \
-  -e DB_USER=postgres \
-  -e DB_PASSWORD=postgres \
-  -e DB_NAME=go_rss_ui_2 \
-  -e DB_PORT=5432 \
+  -e RSS_DB_HOST=postgres \
+  -e RSS_DB_USER=postgres \
+  -e RSS_DB_PASSWORD=postgres \
+  -e RSS_DB_NAME=go_rss_ui_2 \
+  -e RSS_DB_PORT=5432 \
   go-rss-ui:latest
 ```
 
 ## Configuration
 
-The application uses environment variables for configuration. Create a `.env` file or set the following variables:
+The application uses environment variables for configuration. All variables use the `RSS_` prefix. Create a `.env` file or set the following variables:
 
-- `DATABASE_URL` - PostgreSQL connection string
-- `BACKGROUND_FETCH_ENABLED` - Enable/disable background feed fetching (default: true)
-- `BACKGROUND_FETCH_INTERVAL` - Interval in seconds for background fetching (default: 3600)
-- `CYPRESS` - Enable Cypress mode for testing tools (default: false)
+### Database Configuration
+- `RSS_DATABASE_URL` - Complete PostgreSQL connection string (takes precedence over individual variables)
+- `RSS_DB_HOST` - PostgreSQL database host (default: localhost)
+- `RSS_DB_USER` - PostgreSQL database user (default: postgres)
+- `RSS_DB_PASSWORD` - PostgreSQL database password (default: postgres)
+- `RSS_DB_NAME` - PostgreSQL database name (default: go_rss_ui_2)
+- `RSS_DB_PORT` - PostgreSQL database port (default: 5432)
+- `RSS_DB_SSLMODE` - PostgreSQL SSL mode (default: disable)
+- `RSS_DB_TIMEZONE` - PostgreSQL timezone (default: Asia/Shanghai)
+
+### Redis Configuration
+- `RSS_REDIS_HOST` - Redis host (default: localhost)
+- `RSS_REDIS_PORT` - Redis port (default: 6379)
+- `RSS_REDIS_PASSWORD` - Redis password (default: empty)
+
+### Server Configuration
+- `RSS_PORT` - Server port (default: 8082)
+
+### Background Feed Fetching
+- `RSS_BACKGROUND_FETCH_ENABLED` - Enable/disable background feed fetching (default: true)
+- `RSS_BACKGROUND_FETCH_INTERVAL` - Interval in seconds for background fetching (default: 60)
+
+### Testing
+- `RSS_CYPRESS` - Enable Cypress mode for testing tools (default: false)
 
 ## Default Credentials
 
@@ -218,7 +247,7 @@ The application supports several CLI commands:
 - `GET /logs` - View feed fetch logs (in-memory, max 1000 entries)
 
 #### Tools (Cypress Mode Only)
-- `GET /tools` - Tools page (only when `CYPRESS=true`)
+- `GET /tools` - Tools page (only when `RSS_CYPRESS=true`)
 - `POST /tools/clear-all-tables` - Clear all database tables
 - `POST /tools/clear-table` - Clear a specific table (requires `name` parameter: users, feeds, or items)
 - `POST /tools/seed-users` - Seed users
@@ -270,10 +299,10 @@ The application supports several CLI commands:
 2. Start the web server for Cypress tests with the required environment variables:
    ```bash
    # Using air (for hot reload during development)
-   PORT=8083 DB_NAME=go_rss_ui_test CYPRESS=1 air
+   RSS_PORT=8083 RSS_DB_NAME=go_rss_ui_test RSS_CYPRESS=1 air
 
    # Or using go run
-   PORT=8083 DB_NAME=go_rss_ui_test CYPRESS=1 go run .
+   RSS_PORT=8083 RSS_DB_NAME=go_rss_ui_test RSS_CYPRESS=1 go run .
    ```
 
    The server will start on `http://localhost:8083` (as configured in `cypress.config.js`).

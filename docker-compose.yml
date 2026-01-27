@@ -43,19 +43,20 @@ services:
       dockerfile: Dockerfile
     container_name: go-rss-ui-app
     environment:
-      DB_HOST: postgres
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: go_rss_ui_2
-      DB_PORT: "5432"
-      DB_SSLMODE: disable
-      DB_TIMEZONE: UTC
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      REDIS_PASSWORD: ""
-      BACKGROUND_FETCH_ENABLED: "true"
-      BACKGROUND_FETCH_INTERVAL: "60"
-      CYPRESS: "true"
+      RSS_DB_HOST: postgres
+      RSS_DB_USER: postgres
+      RSS_DB_PASSWORD: postgres
+      RSS_DB_NAME: go_rss_ui_2
+      RSS_DB_PORT: "5432"
+      RSS_DB_SSLMODE: disable
+      RSS_DB_TIMEZONE: UTC
+      RSS_REDIS_HOST: redis
+      RSS_REDIS_PORT: "6379"
+      RSS_REDIS_PASSWORD: ""
+      RSS_BACKGROUND_FETCH_ENABLED: "true"
+      RSS_BACKGROUND_FETCH_INTERVAL: "60"
+      RSS_CYPRESS: "true"
+      RSS_PORT: "8082"
     ports:
       - "8082:8082"
     depends_on:

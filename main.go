@@ -1530,59 +1530,79 @@ func showInfo(c *gin.Context) {
 	// Get environment variables
 	envVars := []EnvVarInfo{
 		{
-			Name:        "DATABASE_URL",
-			Value:       maskPassword(os.Getenv("DATABASE_URL")),
-			Description: "Complete PostgreSQL connection string (takes precedence over individual DB_* variables)",
+			Name:        "RSS_DATABASE_URL",
+			Value:       maskPassword(os.Getenv("RSS_DATABASE_URL")),
+			Description: "Complete PostgreSQL connection string (takes precedence over individual RSS_DB_* variables)",
 		},
 		{
-			Name:        "DB_HOST",
-			Value:       getEnvOrDefault("DB_HOST", "localhost (default)"),
+			Name:        "RSS_DB_HOST",
+			Value:       getEnvOrDefault("RSS_DB_HOST", "localhost (default)"),
 			Description: "PostgreSQL database host",
 		},
 		{
-			Name:        "DB_USER",
-			Value:       getEnvOrDefault("DB_USER", "postgres (default)"),
+			Name:        "RSS_DB_USER",
+			Value:       getEnvOrDefault("RSS_DB_USER", "postgres (default)"),
 			Description: "PostgreSQL database user",
 		},
 		{
-			Name:        "DB_PASSWORD",
-			Value:       maskPassword(getEnvOrDefault("DB_PASSWORD", "postgres (default)")),
+			Name:        "RSS_DB_PASSWORD",
+			Value:       maskPassword(getEnvOrDefault("RSS_DB_PASSWORD", "postgres (default)")),
 			Description: "PostgreSQL database password",
 		},
 		{
-			Name:        "DB_NAME",
-			Value:       getEnvOrDefault("DB_NAME", "go_rss_ui_2 (default)"),
+			Name:        "RSS_DB_NAME",
+			Value:       getEnvOrDefault("RSS_DB_NAME", "go_rss_ui_2 (default)"),
 			Description: "PostgreSQL database name",
 		},
 		{
-			Name:        "DB_PORT",
-			Value:       getEnvOrDefault("DB_PORT", "5432 (default)"),
+			Name:        "RSS_DB_PORT",
+			Value:       getEnvOrDefault("RSS_DB_PORT", "5432 (default)"),
 			Description: "PostgreSQL database port",
 		},
 		{
-			Name:        "DB_SSLMODE",
-			Value:       getEnvOrDefault("DB_SSLMODE", "disable (default)"),
+			Name:        "RSS_DB_SSLMODE",
+			Value:       getEnvOrDefault("RSS_DB_SSLMODE", "disable (default)"),
 			Description: "PostgreSQL SSL mode",
 		},
 		{
-			Name:        "DB_TIMEZONE",
-			Value:       getEnvOrDefault("DB_TIMEZONE", "Asia/Shanghai (default)"),
+			Name:        "RSS_DB_TIMEZONE",
+			Value:       getEnvOrDefault("RSS_DB_TIMEZONE", "Asia/Shanghai (default)"),
 			Description: "PostgreSQL timezone",
 		},
 		{
-			Name:        "BACKGROUND_FETCH_ENABLED",
-			Value:       getEnvValueOrDefault("BACKGROUND_FETCH_ENABLED", "true (default)"),
+			Name:        "RSS_BACKGROUND_FETCH_ENABLED",
+			Value:       getEnvValueOrDefault("RSS_BACKGROUND_FETCH_ENABLED", "true (default)"),
 			Description: "Enable/disable background feed fetching",
 		},
 		{
-			Name:        "BACKGROUND_FETCH_INTERVAL",
+			Name:        "RSS_BACKGROUND_FETCH_INTERVAL",
 			Value:       fmt.Sprintf("%d (default: 60)", GetBackgroundFetchInterval()),
 			Description: "Background feed fetch interval in seconds",
 		},
 		{
-			Name:        "CYPRESS",
-			Value:       getEnvValueOrDefault("CYPRESS", "false (default)"),
+			Name:        "RSS_CYPRESS",
+			Value:       getEnvValueOrDefault("RSS_CYPRESS", "false (default)"),
 			Description: "Enable Cypress mode (enables /tools page for testing)",
+		},
+		{
+			Name:        "RSS_PORT",
+			Value:       getEnvOrDefault("RSS_PORT", "8082 (default)"),
+			Description: "Server port",
+		},
+		{
+			Name:        "RSS_REDIS_HOST",
+			Value:       getEnvOrDefault("RSS_REDIS_HOST", "localhost (default)"),
+			Description: "Redis host",
+		},
+		{
+			Name:        "RSS_REDIS_PORT",
+			Value:       getEnvOrDefault("RSS_REDIS_PORT", "6379 (default)"),
+			Description: "Redis port",
+		},
+		{
+			Name:        "RSS_REDIS_PASSWORD",
+			Value:       maskPassword(getEnvOrDefault("RSS_REDIS_PASSWORD", "(empty)")),
+			Description: "Redis password",
 		},
 	}
 

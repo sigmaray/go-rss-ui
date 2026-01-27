@@ -14,7 +14,7 @@ import (
 // getAdminDSN returns DSN for connecting to postgres database (for admin operations)
 func getAdminDSN() string {
 	host, user, password, _, port := GetDBConfig()
-	sslmode := getEnvOrDefault("DB_SSLMODE", "disable")
+	sslmode := getEnvOrDefault("RSS_DB_SSLMODE", "disable")
 	// Connect to postgres database for admin operations
 	return fmt.Sprintf("host=%s user=%s password=%s dbname=postgres port=%s sslmode=%s",
 		host, user, password, port, sslmode)
@@ -513,7 +513,7 @@ func CommandExecuteSQL() {
 // This function can be called from both CLI command and web handler
 func DumpDBStructure() error {
 	host, user, password, dbname, port := GetDBConfig()
-	sslmode := getEnvOrDefault("DB_SSLMODE", "disable")
+	sslmode := getEnvOrDefault("RSS_DB_SSLMODE", "disable")
 
 	// Use pg_dump to dump schema only (no data)
 	// --schema-only: dump only the schema, not the data
