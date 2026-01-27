@@ -360,6 +360,7 @@ func showStartupInfo() {
 	fmt.Println("  drop-db      - Delete the application database")
 	fmt.Println("  drop-all-tables - Drop all tables in the database")
 	fmt.Println("  create-db    - Create the application database")
+	fmt.Println("  dump-db-structure - Dump database structure to structure.sql file")
 	fmt.Println()
 	fmt.Println("Usage examples:")
 	fmt.Println("  go run .                    - Start web server (default)")
@@ -400,6 +401,8 @@ func main() {
 			CommandFetchFeeds()
 		case "execute-sql":
 			CommandExecuteSQL()
+		case "dump-db-structure":
+			CommandDumpDBStructure()
 		default:
 			fmt.Println("Unknown command:", command)
 			fmt.Println("\nAvailable commands:")
@@ -412,6 +415,7 @@ func main() {
 			fmt.Println("  drop-db      - Delete the application database")
 			fmt.Println("  drop-all-tables - Drop all tables in the database")
 			fmt.Println("  create-db    - Create the application database")
+			fmt.Println("  dump-db-structure - Dump database structure to structure.sql file")
 			os.Exit(1)
 		}
 		return
@@ -607,6 +611,7 @@ func main() {
 
 		// Info route
 		admin.GET("/info", showInfo)
+		admin.POST("/info/dump-db-structure", dumpDBStructureAdmin)
 	}
 
 	r.GET("/login", showLogin)
@@ -626,6 +631,7 @@ func main() {
 		tools.POST("/drop-all-tables", dropAllTables)
 		tools.POST("/create-db", createDB)
 		tools.POST("/migrate", migrate)
+		tools.POST("/dump-db-structure", dumpDBStructure)
 		tools.POST("/execute-sql", executeSQL)
 	}
 
@@ -2566,4 +2572,51 @@ func migrate(c *gin.Context) {
 		log.Printf("Error saving session: %v", err)
 	}
 	c.Redirect(http.StatusFound, "/tools")
+}
+
+func dumpDBStructure(c *gin.Context) {
+	if !IsCypressMode() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Tools are only available when CYPRESS=true"})
+		return
+	}
+
+	session := sessions.Default(c)
+	ConnectDatabase()
+
+	err := DumpDBStructure()
+	if err != nil {
+		addFlashError(session, "Failed to dump database structure: "+err.Error())
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
+		c.Redirect(http.StatusFound, "/tools")
+		return
+	}
+
+	addFlashSuccess(session, "Database structure dumped successfully to structure.sql")
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
+	c.Redirect(http.StatusFound, "/tools")
+}
+
+func dumpDBStructureAdmin(c *gin.Context) {
+	session := sessions.Default(c)
+	ConnectDatabase()
+
+	err := DumpDBStructure()
+	if err != nil {
+		addFlashError(session, "Failed to dump database structure: "+err.Error())
+		if err := session.Save(); err != nil {
+			log.Printf("Error saving session: %v", err)
+		}
+		c.Redirect(http.StatusFound, "/admin/info")
+		return
+	}
+
+	addFlashSuccess(session, "Database structure dumped successfully to structure.sql")
+	if err := session.Save(); err != nil {
+		log.Printf("Error saving session: %v", err)
+	}
+	c.Redirect(http.StatusFound, "/admin/info")
 }

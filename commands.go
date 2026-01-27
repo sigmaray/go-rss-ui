@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"gorm.io/driver/postgres"
@@ -201,7 +202,7 @@ func DropAllTables() (DropAllTablesResult, error) {
 	for _, table := range tables {
 		tableName := table.TableName
 		result.TableNames = append(result.TableNames, tableName)
-		
+
 		// Quote table name to handle special characters
 		// Using CASCADE to automatically drop dependent objects (constraints, indexes, etc.)
 		if err := DB.Exec(fmt.Sprintf(`DROP TABLE IF EXISTS "%s" CASCADE`, tableName)).Error; err != nil {
@@ -508,3 +509,58 @@ func CommandExecuteSQL() {
 	}
 }
 
+// DumpDBStructure dumps the database structure to structure.sql file
+// This function can be called from both CLI command and web handler
+func DumpDBStructure() error {
+	host, user, password, dbname, port := GetDBConfig()
+	sslmode := getEnvOrDefault("DB_SSLMODE", "disable")
+
+	// Use pg_dump to dump schema only (no data)
+	// --schema-only: dump only the schema, not the data
+	// --no-owner: don't output commands to set ownership of objects
+	// --no-privileges: don't output commands to set privileges
+	cmd := exec.Command("pg_dump",
+		"--host", host,
+		"--port", port,
+		"--username", user,
+		"--dbname", dbname,
+		"--schema-only",
+		"--no-owner",
+		"--no-privileges",
+		"--format", "plain",
+	)
+
+	// Set password via environment variable
+	cmd.Env = append(os.Environ(), "PGPASSWORD="+password)
+
+	// Set SSL mode if needed
+	if sslmode != "disable" {
+		cmd.Env = append(cmd.Env, "PGSSLMODE="+sslmode)
+	}
+
+	// Execute command and capture output
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to dump database structure: %w", err)
+	}
+
+	// Write to structure.sql file
+	err = os.WriteFile("structure.sql", output, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write structure.sql file: %w", err)
+	}
+
+	return nil
+}
+
+// CommandDumpDBStructure dumps the database structure to structure.sql file
+func CommandDumpDBStructure() {
+	ConnectDatabase()
+
+	err := DumpDBStructure()
+	if err != nil {
+		appLogger.Fatal().Err(err).Msg("Failed to dump database structure")
+	}
+
+	appLogger.Info().Str("file", "structure.sql").Msg("Database structure dumped successfully")
+}

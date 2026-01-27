@@ -82,6 +82,13 @@
                 </form>
                 <p class="text-muted small mt-2">Creates tables in the database using AutoMigrate</p>
             </div>
+
+            <div class="mb-3">
+                <form action="/tools/dump-db-structure" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-success">Generate structure.sql</button>
+                </form>
+                <p class="text-muted small mt-2">Dumps database structure to structure.sql file (schema only, no data)</p>
+            </div>
         </div>
     </div>
 
