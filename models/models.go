@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"time"
@@ -49,7 +49,7 @@ func (user *User) CheckPassword(password string) bool {
 
 type Feed struct {
 	gorm.Model
-	URL                       string `gorm:"unique_index;not null"`
+	URL                       string `gorm:"uniqueIndex;not null"`
 	Title                     string
 	Description               string
 	LastSuccessfullyFetchedAt *time.Time

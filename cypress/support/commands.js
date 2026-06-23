@@ -9,32 +9,26 @@
 // ***********************************************
 
 
-// Custom command to setup database (clear and seed users)
-// Note: This is now handled inside clearUsersLoginRememberSession for better session management
-Cypress.Commands.add('setupDatabase', () => {
-  // Clear all sessions to ensure fresh state
-  cy.clearCookies()
-  cy.clearLocalStorage()
-  
-  // Clear database - expects redirect (302) or success (200)
-  cy.request({
-    method: 'POST',
-    url: '/tools/clear-all-tables',
-    followRedirect: false,
-    failOnStatusCode: false
-  }).then((response) => {
-    // Accept both redirect (302) and success (200) status codes
-    expect([200, 302]).to.include(response.status)
-  })
-  
-  // Seed users - expects redirect (302) or success (200)
+// Seed default users (admin) via test tools endpoint
+Cypress.Commands.add('seedUsers', () => {
   cy.request({
     method: 'POST',
     url: '/tools/seed-users',
     followRedirect: false,
     failOnStatusCode: false
   }).then((response) => {
-    // Accept both redirect (302) and success (200) status codes
+    expect([200, 302]).to.include(response.status)
+  })
+})
+
+// Clear all tables via test tools endpoint
+Cypress.Commands.add('clearAllTables', () => {
+  cy.request({
+    method: 'POST',
+    url: '/tools/clear-all-tables',
+    followRedirect: false,
+    failOnStatusCode: false
+  }).then((response) => {
     expect([200, 302]).to.include(response.status)
   })
 })
@@ -49,44 +43,31 @@ Cypress.Commands.add('clearTable', (tableName) => {
     },
     followRedirect: false,
     failOnStatusCode: false
+  }).then((response) => {
+    expect([200, 302]).to.include(response.status)
   })
 })
 
-// Custom command to login
-Cypress.Commands.add('clearUsersLoginRememberSession', (username = 'admin', password = 'password') => {
-  cy.session([username, password], () => {
-    // Setup database before login to ensure user exists
-    // Clear only users table, not other tables
-    cy.request({
-      method: 'POST',
-      url: '/tools/clear-table',
-      body: 'name=users',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      followRedirect: false,
-      failOnStatusCode: false
-    })
-    cy.request({
-      method: 'POST',
-      url: '/tools/seed-users',
-      followRedirect: false,
-      failOnStatusCode: false
-    })
-    
-    // Now login
+// Log in with cy.session — caches session within the current spec file only
+Cypress.Commands.add('loginWithSession', (username = 'admin', password = 'password') => {
+  cy.session([Cypress.spec.relative, username, password], () => {
     cy.visit('/login')
     cy.get('input[name="username"]').should('be.visible').type(username)
     cy.get('input[name="password"]').should('be.visible').type(password)
     cy.get('button[type="submit"]').should('be.visible').click()
     cy.url({ timeout: 10000 }).should('include', '/admin/users')
-    // Verify we're logged in by checking for Bootstrap navbar
     cy.get('nav.navbar').should('be.visible')
   }, {
-    cacheAcrossSpecs: false
-  });
-  
-  // After session is restored, visit a page to ensure session is active
+    cacheAcrossSpecs: false,
+    validate() {
+      cy.request({
+        url: '/admin/users',
+        followRedirect: false,
+        failOnStatusCode: false,
+      }).its('status').should('eq', 200)
+    },
+  })
+
   cy.visit('/admin/users')
   cy.url().should('include', '/admin')
 })
@@ -114,4 +95,9 @@ Cypress.Commands.add('shouldBeLoggedIn', () => {
 // Custom command to check if user is logged out
 Cypress.Commands.add('shouldBeLoggedOut', () => {
   cy.url().should('eq', Cypress.config('baseUrl') + '/')
+})
+
+// Auto-accept or reject window.confirm dialogs (uses Cypress window:confirm event)
+Cypress.Commands.add('stubConfirm', (accept = true) => {
+  cy.on('window:confirm', () => accept)
 })

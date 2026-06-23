@@ -1,10 +1,11 @@
-package main
+package database
 
 import (
 	"log"
 	"os"
 
 	"github.com/morkid/paginate"
+	"go-rss-ui/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -12,8 +13,8 @@ import (
 var DB *gorm.DB
 var Paginator *paginate.Pagination
 
-func ConnectDatabase() {
-	dsn := GetDSN()
+func Connect() {
+	dsn := config.GetDSN()
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -29,4 +30,3 @@ func ConnectDatabase() {
 		PageStart:   1, // Pages start from 1, not 0
 	})
 }
-

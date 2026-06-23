@@ -1,10 +1,11 @@
 describe('Feed Management', () => {
+  before(() => {
+    cy.clearAllTables()
+    cy.seedUsers()
+  })
+
   beforeEach(() => {
-    cy.clearUsersLoginRememberSession()
-    cy.clearTable('feeds')
-    // Ensure we're on the admin page after login
-    cy.visit('/admin/feeds')
-    cy.url().should('include', '/admin/feeds')
+    cy.loginWithSession()
   })
 
   describe('Feed List', () => {
@@ -56,7 +57,7 @@ describe('Feed Management', () => {
       cy.get('input[name="url"]:invalid').should('exist')
     })
 
-    it('should handle duplicate URL attempt', () => {
+    it('should show error when creating feed with duplicate URL', () => {
       const feedUrl = `https://example.com/duplicate_${Date.now()}.xml`
       
       // Create first feed
@@ -73,16 +74,10 @@ describe('Feed Management', () => {
       cy.get('input[name="url"]').type(feedUrl)
       cy.get('form[action="/admin/feeds"] button[type="submit"]').click()
       
-      // Check result - if error handling works, error should be shown
-      cy.url().then((url) => {
-        if (url.includes('/admin/feeds/new')) {
-          // Still on create page - error should be shown (correct behavior)
-          cy.get('.alert-danger').should('be.visible').should('contain', 'Failed to create feed')
-        } else {
-          // Redirected to feeds page - this may indicate unique constraint is not enforced
-          cy.url().should('include', '/admin/feeds')
-        }
-      })
+      cy.get('h1').contains('Create New Feed').should('be.visible')
+      cy.get('.alert-danger').should('be.visible').should('contain', 'Feed URL already exists')
+      cy.visit('/admin/feeds')
+      cy.get('tbody tr').filter(`:contains("${feedUrl}")`).should('have.length', 1)
     })
 
     it('should cancel create feed and return to feeds list', () => {
@@ -94,20 +89,24 @@ describe('Feed Management', () => {
   })
 
   describe('Delete Feed', () => {
-    let testFeedId
     let testFeedUrl
 
     beforeEach(() => {
-      // Create a test feed for deletion
       testFeedUrl = `https://example.com/deletetest_${Date.now()}.xml`
       cy.visit('/admin/feeds/new')
       cy.get('input[name="url"]').type(testFeedUrl)
       cy.get('form[action="/admin/feeds"] button[type="submit"]').click()
-      
-      // Get the feed ID from the table
       cy.visit('/admin/feeds')
-      cy.get('tbody tr').contains(testFeedUrl).parent('tr').find('td').first().then(($td) => {
-        testFeedId = $td.text().trim()
+      cy.get('tbody tr').contains(testFeedUrl).parent('tr').find('td').first().invoke('text').as('testFeedId')
+    })
+
+    it('should display feed detail page by id', () => {
+      cy.get('@testFeedId').then((id) => {
+        const feedId = id.trim()
+        cy.visit(`/admin/feeds/${feedId}`)
+        cy.url().should('include', `/admin/feeds/${feedId}`)
+        cy.get('h2').contains('Feed Information').should('be.visible')
+        cy.contains('dd', testFeedUrl).should('be.visible')
       })
     })
 
@@ -115,11 +114,7 @@ describe('Feed Management', () => {
       cy.visit('/admin/feeds')
       cy.get('tbody tr').contains(testFeedUrl).should('exist')
       
-      // Intercept the confirm dialog and accept it
-      cy.window().then((win) => {
-        cy.stub(win, 'confirm').returns(true)
-      })
-      
+      cy.stubConfirm(true)
       cy.get('tbody tr').contains(testFeedUrl).parent('tr').find('form[action*="/delete"] button').click()
       
       cy.url().should('include', '/admin/feeds')
@@ -140,11 +135,7 @@ describe('Feed Management', () => {
       cy.visit('/admin/feeds')
       cy.get('tbody tr').contains(testFeedUrl).should('exist')
       
-      // Intercept the confirm dialog and reject it
-      cy.window().then((win) => {
-        cy.stub(win, 'confirm').returns(false)
-      })
-      
+      cy.stubConfirm(false)
       cy.get('tbody tr').contains(testFeedUrl).parent('tr').find('form[action*="/delete"] button').click()
       
       // Feed should still exist
@@ -183,11 +174,7 @@ describe('Feed Management', () => {
         const initialCount = $rows.length
         expect(initialCount).to.be.at.least(3)
         
-        // Intercept the confirm dialog and accept it
-        cy.window().then((win) => {
-          cy.stub(win, 'confirm').returns(true)
-        })
-        
+        cy.stubConfirm(true)
         cy.get('form[action="/admin/feeds/delete-all"] button').click()
         
         cy.url().should('include', '/admin/feeds')
@@ -204,11 +191,7 @@ describe('Feed Management', () => {
         const initialCount = $rows.length
         expect(initialCount).to.be.at.least(3)
         
-        // Intercept the confirm dialog and reject it
-        cy.window().then((win) => {
-          cy.stub(win, 'confirm').returns(false)
-        })
-        
+        cy.stubConfirm(false)
         cy.get('form[action="/admin/feeds/delete-all"] button').click()
         
         // Feeds should still exist

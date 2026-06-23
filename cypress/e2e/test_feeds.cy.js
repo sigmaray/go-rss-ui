@@ -1,10 +1,11 @@
 describe('Test Feeds Fetch', () => {
+  before(() => {
+    cy.clearAllTables()
+    cy.seedUsers()    
+  })
+
   beforeEach(() => {
-    cy.clearUsersLoginRememberSession()
-    cy.clearTable('feeds')
-    // Ensure we're logged in before each test
-    cy.visit('/admin/feeds')
-    cy.url().should('include', '/admin/feeds')
+    cy.loginWithSession()
   })
 
   it('should fetch items from test feeds', () => {

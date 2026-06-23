@@ -121,6 +121,8 @@ docker-compose logs -f app
    export RSS_DB_NAME=yourdb
    export RSS_DB_PORT=5432
    export RSS_DB_SSLMODE=disable
+   export RSS_DB_TIMEZONE=UTC
+   export RSS_SESSION_SECRET=replace-with-a-long-random-secret-at-least-32-characters
    ```
 
 4. Run database migrations:
@@ -159,8 +161,27 @@ docker run -d \
   -e RSS_DB_PASSWORD=postgres \
   -e RSS_DB_NAME=go_rss_ui_2 \
   -e RSS_DB_PORT=5432 \
+  -e RSS_SESSION_SECRET=replace-with-a-long-random-secret-at-least-32-characters \
   go-rss-ui:latest
 ```
+
+For Docker Compose, pass `RSS_SESSION_SECRET` from the environment or an untracked local `.env` file instead of committing a real production secret into the repository.
+
+On Ubuntu, you can generate and provide the secret in either of these ways:
+
+```bash
+# Option 1: current shell session only
+export RSS_SESSION_SECRET="$(openssl rand -base64 48)"
+docker compose up -d
+```
+
+```bash
+# Option 2: local .env file next to docker-compose.yml
+printf 'RSS_SESSION_SECRET=%s\n' "$(openssl rand -base64 48)" >> .env
+docker compose up -d
+```
+
+If you use the `.env` file approach, keep that file out of version control and store the real production value only on the target server or in your secret manager.
 
 ## Configuration
 
@@ -183,6 +204,11 @@ The application uses environment variables for configuration. All variables use 
 
 ### Server Configuration
 - `RSS_PORT` - Server port (default: 8082)
+- `RSS_ENV` - Environment name; set to `production` in production deployments
+
+### Session Configuration
+- `RSS_SESSION_SECRET` - Session signing secret; required in production and should be at least 32 characters long
+- `RSS_SESSION_SECURE` - Explicit override for the session cookie `Secure` flag; when omitted, secure cookies are enabled automatically in production
 
 ### Background Feed Fetching
 - `RSS_BACKGROUND_FETCH_ENABLED` - Enable/disable background feed fetching (default: true)
@@ -327,6 +353,10 @@ The Cypress tests cover:
 - Logs viewing
 - Error handling
 - Complete user journey integration tests
+
+## Example `.env`
+
+See [`.env.example`](/home/foobar/r/sandbox/go-rss-ui-2/.env.example) for the current variable names and defaults. The application expects `RSS_*` variables such as `RSS_DB_HOST`, `RSS_DATABASE_URL`, `RSS_CYPRESS`, and `RSS_PORT`.
 
 ## Project Structure
 

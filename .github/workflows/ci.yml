@@ -182,42 +182,42 @@ jobs:
       
       - name: Create database
         env:
-          DB_HOST: localhost
-          DB_USER: postgres
-          DB_PASSWORD: postgres
-          DB_NAME: go_rss_ui_test
-          DB_PORT: '5432'
+          RSS_DB_HOST: localhost
+          RSS_DB_USER: postgres
+          RSS_DB_PASSWORD: postgres
+          RSS_DB_NAME: go_rss_ui_test
+          RSS_DB_PORT: '5432'
         run: |
           go run . create-db || true
       
       - name: Run migrations
         env:
-          DB_HOST: localhost
-          DB_USER: postgres
-          DB_PASSWORD: postgres
-          DB_NAME: go_rss_ui_test
-          DB_PORT: '5432'
+          RSS_DB_HOST: localhost
+          RSS_DB_USER: postgres
+          RSS_DB_PASSWORD: postgres
+          RSS_DB_NAME: go_rss_ui_test
+          RSS_DB_PORT: '5432'
         run: go run . migrate
       
       - name: Seed users
         env:
-          DB_HOST: localhost
-          DB_USER: postgres
-          DB_PASSWORD: postgres
-          DB_NAME: go_rss_ui_test
-          DB_PORT: '5432'
+          RSS_DB_HOST: localhost
+          RSS_DB_USER: postgres
+          RSS_DB_PASSWORD: postgres
+          RSS_DB_NAME: go_rss_ui_test
+          RSS_DB_PORT: '5432'
         run: go run . seed-users
       
       - name: Start application
         env:
-          DB_HOST: localhost
-          DB_USER: postgres
-          DB_PASSWORD: postgres
-          DB_NAME: go_rss_ui_test
-          DB_PORT: '5432'
-          PORT: '8083'
-          CYPRESS: 'true'
-          BACKGROUND_FETCH_ENABLED: 'false'
+          RSS_DB_HOST: localhost
+          RSS_DB_USER: postgres
+          RSS_DB_PASSWORD: postgres
+          RSS_DB_NAME: go_rss_ui_test
+          RSS_DB_PORT: '5432'
+          RSS_PORT: '8083'
+          RSS_CYPRESS: 'true'
+          RSS_BACKGROUND_FETCH_ENABLED: 'false'
         run: |
           go build -o tmp/main .
           ./tmp/main &

@@ -1,12 +1,25 @@
 # Cypress Tests for Go RSS UI Application
 
-This directory contains end-to-end tests for the Go RSS UI application using Cypress.
+End-to-end tests for the Go RSS UI application using Cypress.
 
 ## Prerequisites
 
 1. Node.js and npm installed
-2. Go application running on `http://localhost:8080`
-3. PostgreSQL database configured with the default admin user (username: `admin`, password: `admin`)
+2. PostgreSQL database available (test database recommended, e.g. `go_rss_ui_test`)
+3. Go application running on `http://localhost:8083` with Cypress mode enabled (see below)
+
+## Starting the Application for Tests
+
+Cypress tests call `/tools/*` endpoints (`clear-all-tables`, `seed-users`, `clear-table`, etc.). Those routes are only available when Cypress mode is enabled:
+
+```bash
+RSS_PORT=8083 RSS_DB_NAME=go_rss_ui_test RSS_CYPRESS=1 go run .
+
+# Or with hot reload:
+RSS_CYPRESS=true RSS_PORT=8083 RSS_DB_NAME=go_rss_ui_test air
+```
+
+Set `RSS_CYPRESS=1` or `RSS_CYPRESS=true` (also accepts `yes` / `on`). Without this, tool requests return **403** and database setup commands in tests will fail.
 
 ## Installation
 
@@ -22,47 +35,79 @@ npm install
 npm run cypress:open
 ```
 
-This will open the Cypress Test Runner where you can run individual tests interactively.
-
 ### Run All Tests (Headless)
 
 ```bash
 npm run cypress:run
+# alias:
+npm test
 ```
 
-This will run all tests in headless mode and output results to the terminal.
-
-### Run Tests with Custom Configuration
+### Run Tests with Browser Visible
 
 ```bash
-npm test
+npm run cypress:run:headed
+# alias:
+npm test:headed
 ```
 
 ## Test Structure
 
-- **`cypress/e2e/home.cy.js`** - Tests for the home page functionality
-- **`cypress/e2e/auth.cy.js`** - Tests for authentication (login, logout, redirects)
-- **`cypress/e2e/admin.cy.js`** - Tests for the admin panel functionality
-- **`cypress/e2e/integration.cy.js`** - End-to-end integration tests covering full user flows
+| Spec | Coverage |
+|------|----------|
+| `cypress/e2e/home.cy.js` | Home page (title, login link) — no DB setup |
+| `cypress/e2e/auth.cy.js` | Authentication (login, logout, redirects, invalid credentials) |
+| `cypress/e2e/admin.cy.js` | Admin panel (users table, logout button) |
+| `cypress/e2e/feeds.cy.js` | Feed CRUD, validation, bulk delete |
+| `cypress/e2e/items.cy.js` | Items list/detail, empty state, bulk delete |
+| `cypress/e2e/user_management.cy.js` | User CRUD, validation, uniqueness |
+| `cypress/e2e/test_feeds.cy.js` | Fetching items from test feeds, fetch error handling |
+| `cypress/e2e/integration.cy.js` | Full login/logout journey, failed login retry |
+
+Most specs reset the database once per file in a `before()` hook:
+
+```javascript
+before(() => {
+  cy.clearAllTables()
+  cy.seedUsers()
+})
+```
+
+Specs that require an authenticated session also call `cy.loginWithSession()` in `beforeEach()`.
 
 ## Custom Commands
 
-The tests use custom Cypress commands defined in `cypress/support/commands.js`:
+Defined in `cypress/support/commands.js`:
 
-- `cy.login(username, password)` - Logs in with the specified credentials
-- `cy.logout()` - Logs out the current user
-- `cy.shouldBeLoggedIn()` - Asserts that user is logged in and on admin page
-- `cy.shouldBeLoggedOut()` - Asserts that user is logged out and on home page
+| Command | Description |
+|---------|-------------|
+| `cy.clearAllTables()` | Clear all tables via `POST /tools/clear-all-tables` |
+| `cy.seedUsers()` | Create default admin user via `POST /tools/seed-users` |
+| `cy.clearTable(tableName)` | Clear one table (`users`, `feeds`, or `items`) via `POST /tools/clear-table` |
+| `cy.loginWithSession(username, password)` | Log in with `cy.session` (default: `admin` / `password`); cached per spec file |
+| `cy.login(username, password)` | Log in without session caching (default: `admin` / `password`) |
+| `cy.logout()` | Log out the current user |
+| `cy.shouldBeLoggedIn()` | Assert URL includes `/admin` |
+| `cy.shouldBeLoggedOut()` | Assert URL is the home page |
+| `cy.stubConfirm(accept)` | Stub `window.confirm` dialogs (default: accept) |
+
+Tool commands accept HTTP `200` or `302` responses (the Go handlers may redirect to `/tools`).
 
 ## Test Data
 
-The tests expect:
-- Default admin user with username: `admin` and password: `admin`
-- Application running on `http://localhost:8080`
+- Default admin user: username `admin`, password `password` (created by `seed-users` / `cy.seedUsers()`)
+- Application base URL: `http://localhost:8083` (override with `CYPRESS_BASE_URL` if needed)
+- Application must run with `RSS_CYPRESS=1`
 
 ## Configuration
 
-Test configuration is defined in `cypress.config.js`. Key settings:
-- Base URL: `http://localhost:8080`
-- Viewport: 1280x720
-- Timeouts: 10 seconds for commands and requests
+Defined in `cypress.config.js`:
+
+- Base URL: `http://localhost:8083`
+- Viewport: 1280×720
+- Timeouts: 10 s (commands), 15 s (requests/responses)
+- Retries: 2 in run mode, 0 in open mode
+- Video recording: disabled
+- Screenshots on failure: enabled
+
+Support files are loaded from `cypress/support/e2e.js`, which imports `commands.js`.

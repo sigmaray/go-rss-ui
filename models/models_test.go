@@ -1,22 +1,21 @@
-package main
+package models_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go-rss-ui/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-// setupTestDB creates an in-memory SQLite database for testing
 func setupTestDB(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
 
-	// Auto-migrate models
-	err = db.AutoMigrate(&User{}, &Feed{}, &Item{})
+	err = db.AutoMigrate(&models.User{}, &models.Feed{}, &models.Item{})
 	if err != nil {
 		t.Fatalf("Failed to migrate test database: %v", err)
 	}
@@ -28,15 +27,15 @@ func TestUser_CheckPassword(t *testing.T) {
 	tests := []struct {
 		name           string
 		plainPassword  string
-		setupUser      func(*gorm.DB) *User
+		setupUser      func(*gorm.DB) *models.User
 		expectedResult bool
 		description    string
 	}{
 		{
 			name:          "correct password",
 			plainPassword: "password123",
-			setupUser: func(db *gorm.DB) *User {
-				user := &User{Username: "testuser", Password: "password123"}
+			setupUser: func(db *gorm.DB) *models.User {
+				user := &models.User{Username: "testuser", Password: "password123"}
 				db.Create(user)
 				return user
 			},
@@ -46,8 +45,8 @@ func TestUser_CheckPassword(t *testing.T) {
 		{
 			name:          "incorrect password",
 			plainPassword: "wrongpassword",
-			setupUser: func(db *gorm.DB) *User {
-				user := &User{Username: "testuser", Password: "password123"}
+			setupUser: func(db *gorm.DB) *models.User {
+				user := &models.User{Username: "testuser", Password: "password123"}
 				db.Create(user)
 				return user
 			},
@@ -57,8 +56,8 @@ func TestUser_CheckPassword(t *testing.T) {
 		{
 			name:          "empty password",
 			plainPassword: "",
-			setupUser: func(db *gorm.DB) *User {
-				user := &User{Username: "testuser", Password: "password123"}
+			setupUser: func(db *gorm.DB) *models.User {
+				user := &models.User{Username: "testuser", Password: "password123"}
 				db.Create(user)
 				return user
 			},
@@ -72,8 +71,7 @@ func TestUser_CheckPassword(t *testing.T) {
 			db := setupTestDB(t)
 			user := tt.setupUser(db)
 
-			// Reload user from database to get the hashed password
-			var reloadedUser User
+			var reloadedUser models.User
 			db.First(&reloadedUser, user.ID)
 
 			result := reloadedUser.CheckPassword(tt.plainPassword)
@@ -113,20 +111,17 @@ func TestUser_BeforeSave(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := setupTestDB(t)
 
-			user := &User{
+			user := &models.User{
 				Username: "testuser",
 				Password: tt.initialPassword,
 			}
 
-			// BeforeSave is called automatically by GORM
 			err := db.Create(user).Error
 			assert.NoError(t, err, "Should create user without error")
 
-			// Reload user from database
-			var reloadedUser User
+			var reloadedUser models.User
 			db.First(&reloadedUser, user.ID)
 
-			// Check if password is hashed (bcrypt hashes are 60 characters and start with $2a$, $2b$, or $2y$)
 			isHashed := len(reloadedUser.Password) == 60 &&
 				len(reloadedUser.Password) >= 4 &&
 				reloadedUser.Password[0] == '$' &&
@@ -136,12 +131,10 @@ func TestUser_BeforeSave(t *testing.T) {
 
 			if tt.expectedHashed {
 				assert.True(t, isHashed, tt.description)
-				// If it was already hashed, it should remain the same
 				if len(tt.initialPassword) == 60 && tt.initialPassword[0] == '$' {
 					assert.Equal(t, tt.initialPassword, reloadedUser.Password, "Already hashed password should remain unchanged")
 				}
 			} else {
-				// For empty password, it should remain empty
 				assert.Equal(t, "", reloadedUser.Password, tt.description)
 			}
 		})
@@ -151,26 +144,21 @@ func TestUser_BeforeSave(t *testing.T) {
 func TestUser_BeforeSave_UpdatePassword(t *testing.T) {
 	db := setupTestDB(t)
 
-	// Create user with initial password
-	user := &User{Username: "testuser", Password: "oldpassword"}
+	user := &models.User{Username: "testuser", Password: "oldpassword"}
 	err := db.Create(user).Error
 	assert.NoError(t, err)
 
-	// Get the hashed password
-	var initialUser User
+	var initialUser models.User
 	db.First(&initialUser, user.ID)
 	initialHashedPassword := initialUser.Password
 
-	// Update password
 	user.Password = "newpassword"
 	err = db.Save(user).Error
 	assert.NoError(t, err)
 
-	// Reload and check
-	var updatedUser User
+	var updatedUser models.User
 	db.First(&updatedUser, user.ID)
 
-	// New password should be hashed and different from old
 	assert.NotEqual(t, initialHashedPassword, updatedUser.Password, "New password should be different from old")
 	assert.True(t, updatedUser.CheckPassword("newpassword"), "New password should be correct")
 	assert.False(t, updatedUser.CheckPassword("oldpassword"), "Old password should not work")
@@ -179,29 +167,21 @@ func TestUser_BeforeSave_UpdatePassword(t *testing.T) {
 func TestUser_BeforeSave_UpdateWithoutPassword(t *testing.T) {
 	db := setupTestDB(t)
 
-	// Create user with password
-	user := &User{Username: "testuser", Password: "password123"}
+	user := &models.User{Username: "testuser", Password: "password123"}
 	err := db.Create(user).Error
 	assert.NoError(t, err)
 
-	// Get the hashed password
-	var initialUser User
+	var initialUser models.User
 	db.First(&initialUser, user.ID)
 	initialHashedPassword := initialUser.Password
 
-	// Update username using Select to only update username field, not password
-	// This is the correct way to update without changing password
 	err = db.Model(&user).Select("username").Updates(map[string]interface{}{"username": "newusername"}).Error
 	assert.NoError(t, err)
 
-	// Reload and check
-	var updatedUser User
+	var updatedUser models.User
 	db.First(&updatedUser, user.ID)
 
-	// Username should be updated
 	assert.Equal(t, "newusername", updatedUser.Username, "Username should be updated")
-
-	// Password should remain unchanged
 	assert.Equal(t, initialHashedPassword, updatedUser.Password, "Password should remain unchanged")
 	assert.True(t, updatedUser.CheckPassword("password123"), "Original password should still work")
 }

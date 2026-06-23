@@ -1,4 +1,4 @@
-package main
+package validation
 
 import (
 	"fmt"
@@ -78,10 +78,10 @@ func validateUsername(fl validator.FieldLevel) bool {
 // 	if password == "" {
 // 		return false
 // 	}
-
+//
 // 	hasLetter := false
 // 	hasNumber := false
-
+//
 // 	for _, char := range password {
 // 		if unicode.IsLetter(char) {
 // 			hasLetter = true
@@ -90,7 +90,7 @@ func validateUsername(fl validator.FieldLevel) bool {
 // 			hasNumber = true
 // 		}
 // 	}
-
+//
 // 	return hasLetter && hasNumber
 // }
 

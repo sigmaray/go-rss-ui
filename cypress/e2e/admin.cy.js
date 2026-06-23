@@ -1,6 +1,11 @@
 describe('Admin Panel', () => {
-  beforeEach(() => {
-    cy.clearUsersLoginRememberSession()
+  before(() => {
+    cy.clearAllTables()
+    cy.seedUsers()
+  })
+
+  beforeEach(() => {    
+    cy.loginWithSession()
   })
 
   it('should display admin panel title', () => {

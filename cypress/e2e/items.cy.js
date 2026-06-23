@@ -1,6 +1,11 @@
 describe('Items Management', () => {
+  before(() => {
+    cy.clearAllTables()
+    cy.seedUsers()    
+  })
+
   beforeEach(() => {
-    cy.clearUsersLoginRememberSession()
+    cy.loginWithSession()
   })
 
   describe('Items List', () => {
@@ -25,9 +30,8 @@ describe('Items Management', () => {
 
     it('should display empty state when no items exist', () => {
       cy.visit('/admin/items')
-      // Table should exist even if empty
       cy.get('table').should('be.visible')
-      cy.get('tbody').should('exist')
+      cy.get('tbody tr').should('have.length', 0)
     })
   })
 
@@ -58,9 +62,7 @@ describe('Items Management', () => {
       cy.visit('/admin/items')
       cy.get('form[action="/admin/items/fetch"] button').click()
       cy.url().should('include', '/admin/items')
-      
-      // Wait for items to be fetched
-      cy.wait(2000)
+      cy.get('.alert-success').should('be.visible').should('contain', 'Fetched items')
       
       // Now verify we can view an item
       cy.get('tbody tr').should('have.length.at.least', 1)
@@ -100,9 +102,8 @@ describe('Items Management', () => {
       cy.visit('/admin/items')
       cy.get('form[action="/admin/items/fetch"] button').click()
       cy.url().should('include', '/admin/items')
-      
-      // Wait for items to be fetched
-      cy.wait(2000)
+      cy.get('.alert-success').should('be.visible').should('contain', 'Fetched items')
+      cy.get('tbody tr').should('have.length.at.least', 1)
     })
 
     it('should display Delete All Items button', () => {
@@ -119,11 +120,7 @@ describe('Items Management', () => {
         const initialCount = $rows.length
         expect(initialCount).to.be.at.least(1)
         
-        // Intercept the confirm dialog and accept it
-        cy.window().then((win) => {
-          cy.stub(win, 'confirm').returns(true)
-        })
-        
+        cy.stubConfirm(true)
         cy.get('form[action="/admin/items/delete-all"] button').click()
         
         cy.url().should('include', '/admin/items')
@@ -140,11 +137,7 @@ describe('Items Management', () => {
         const initialCount = $rows.length
         expect(initialCount).to.be.at.least(1)
         
-        // Intercept the confirm dialog and reject it
-        cy.window().then((win) => {
-          cy.stub(win, 'confirm').returns(false)
-        })
-        
+        cy.stubConfirm(false)
         cy.get('form[action="/admin/items/delete-all"] button').click()
         
         // Items should still exist

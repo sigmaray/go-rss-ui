@@ -1,6 +1,11 @@
 describe('User Management', () => {
+  before(() => {
+    cy.clearAllTables()
+    cy.seedUsers()    
+  })
+
   beforeEach(() => {
-    cy.clearUsersLoginRememberSession()    
+    cy.loginWithSession()
   })
 
   describe('Create User', () => {
@@ -44,7 +49,7 @@ describe('User Management', () => {
       cy.get('input[name="password"]:invalid').should('exist')
     })
 
-    it('should handle duplicate username attempt', () => {
+    it('should show error when creating user with duplicate username', () => {
       const username = `duplicate_${Date.now()}`
       
       // Create first user
@@ -63,20 +68,10 @@ describe('User Management', () => {
       cy.get('input[name="password"]').type('password2')
       cy.get('form[action="/admin/users"] button[type="submit"]').click()
       
-      // Check result - if error handling works, error should be shown
-      // If redirected, the app may have a bug with unique constraint
-      cy.url().then((url) => {
-        if (url.includes('/admin/users/new')) {
-          // Still on create page - error should be shown (correct behavior)
-          cy.get('.alert-danger').should('be.visible').should('contain', 'Failed to create user')
-        } else {
-          // Redirected to users page - this may indicate unique constraint is not enforced
-          // This is a known limitation - the app should show error but currently redirects
-          cy.url().should('include', '/admin/users')
-          // Note: In a properly configured database, duplicate should be prevented
-          // This test documents current behavior
-        }
-      })
+      cy.get('h1').contains('Create New User').should('be.visible')
+      cy.get('.alert-danger').should('be.visible').should('contain', 'Username already exists')
+      cy.visit('/admin/users')
+      cy.get('tbody tr').filter(`:contains("${username}")`).should('have.length', 1)
     })
 
     it('should cancel create user and return to users list', () => {
@@ -213,11 +208,7 @@ describe('User Management', () => {
       cy.visit('/admin/users')
       cy.get('tbody tr').contains(testUsername).should('exist')
       
-      // Intercept the confirm dialog and accept it
-      cy.window().then((win) => {
-        cy.stub(win, 'confirm').returns(true)
-      })
-      
+      cy.stubConfirm(true)
       cy.get('tbody tr').contains(testUsername).parent('tr').find('form[action*="/delete"] button').click()
       
       cy.url().should('include', '/admin/users')
@@ -228,11 +219,7 @@ describe('User Management', () => {
       cy.visit('/admin/users')
       cy.get('tbody tr').contains(testUsername).should('exist')
       
-      // Intercept the confirm dialog and reject it
-      cy.window().then((win) => {
-        cy.stub(win, 'confirm').returns(false)
-      })
-      
+      cy.stubConfirm(false)
       cy.get('tbody tr').contains(testUsername).parent('tr').find('form[action*="/delete"] button').click()
       
       // User should still exist
@@ -240,8 +227,16 @@ describe('User Management', () => {
     })
 
     it('should show error when deleting non-existent user', () => {
-      // This test would require making a direct POST request, which is complex in Cypress
-      // For now, we'll skip this edge case as it's less critical
+      cy.request({
+        method: 'POST',
+        url: '/admin/users/99999/delete',
+        followRedirect: false,
+      }).then((response) => {
+        expect(response.status).to.eq(302)
+        expect(response.headers.location).to.include('/admin/users')
+      })
+      cy.visit('/admin/users')
+      cy.get('.alert-danger').should('be.visible').should('contain', 'User not found')
     })
   })
 

@@ -1,21 +1,9 @@
 describe('Full Application Flow', () => {
-  beforeEach(() => {
-    cy.clearCookies()
-    cy.clearLocalStorage()
-    // Setup database with admin user (done via cy.request since we're not using clearUsersLoginRememberSession)
-    cy.request({
-      method: 'POST',
-      url: '/tools/clear-all-tables',
-      followRedirect: false,
-      failOnStatusCode: false
-    })
-    cy.request({
-      method: 'POST',
-      url: '/tools/seed-users',
-      followRedirect: false,
-      failOnStatusCode: false
-    })
+  before(() => {
+    cy.clearAllTables()
+    cy.seedUsers()
   })
+
   it('should complete full user journey: admin -> login -> admin -> logout', () => {
     cy.visit('/admin')
 
