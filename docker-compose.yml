@@ -55,6 +55,7 @@ services:
       RSS_REDIS_PASSWORD: ""
       RSS_BACKGROUND_FETCH_ENABLED: "true"
       RSS_BACKGROUND_FETCH_INTERVAL: "60"
+      RSS_SESSION_SECRET: ${RSS_SESSION_SECRET}
       RSS_CYPRESS: "true"
       RSS_PORT: "8082"
     ports:
@@ -82,5 +83,4 @@ volumes:
 networks:
   go-rss-network:
     driver: bridge
-
 

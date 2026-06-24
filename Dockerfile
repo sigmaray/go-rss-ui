@@ -45,6 +45,10 @@ COPY --from=builder /build/go-rss-ui .
 COPY --from=builder /build/templates ./templates
 COPY --from=builder /build/static ./static
 
+# Copy entrypoint script
+COPY docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
+
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app
 
@@ -55,9 +59,9 @@ USER appuser
 EXPOSE 8082
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost:8082/ || exit 1
 
-# Run the application
-CMD ["./go-rss-ui", "server"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
+CMD ["server"]
 
