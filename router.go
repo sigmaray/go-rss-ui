@@ -43,9 +43,11 @@ func setupRouter() *gin.Engine {
 		admin.POST("/users/:id/delete", handlers.DeleteUser)
 
 		admin.GET("/feeds", handlers.FeedsIndex)
-		admin.GET("/feeds/:id", handlers.ShowFeed)
 		admin.GET("/feeds/new", handlers.ShowCreateFeedForm)
 		admin.POST("/feeds", handlers.CreateFeed)
+		admin.GET("/feeds/:id/edit", handlers.ShowEditFeedForm)
+		admin.POST("/feeds/:id/edit", handlers.EditFeed)
+		admin.GET("/feeds/:id", handlers.ShowFeed)
 		admin.POST("/feeds/:id/fetch", handlers.FetchSingleFeed)
 		admin.POST("/feeds/:id/delete", handlers.DeleteFeed)
 		admin.POST("/feeds/delete-all", handlers.DeleteAllFeeds)

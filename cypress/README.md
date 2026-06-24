@@ -58,7 +58,7 @@ npm test:headed
 | `cypress/e2e/home.cy.js` | Home page (title, login link) — no DB setup |
 | `cypress/e2e/auth.cy.js` | Authentication (login, logout, redirects, invalid credentials) |
 | `cypress/e2e/admin.cy.js` | Admin panel (users table, logout button) |
-| `cypress/e2e/feeds.cy.js` | Feed CRUD, validation, bulk delete |
+| `cypress/e2e/feeds.cy.js` | Feed CRUD (create, edit, delete), validation, bulk delete |
 | `cypress/e2e/items.cy.js` | Items list/detail, empty state, bulk delete |
 | `cypress/e2e/user_management.cy.js` | User CRUD, validation, uniqueness |
 | `cypress/e2e/test_feeds.cy.js` | Fetching items from test feeds, fetch error handling |

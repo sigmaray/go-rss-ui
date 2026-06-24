@@ -92,6 +92,88 @@ func CreateFeed(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/admin/feeds")
 }
 
+func ShowEditFeedForm(c *gin.Context) {
+	id := c.Param("id")
+	session := sessions.Default(c)
+
+	var feed models.Feed
+	if err := database.DB.First(&feed, id).Error; err != nil {
+		addFlashError(session, "Feed not found")
+		saveSession(session)
+		c.Redirect(http.StatusFound, "/admin/feeds")
+		return
+	}
+
+	data := getTemplateData(c, gin.H{
+		"title": "Edit Feed",
+		"feed":  feed,
+	})
+	c.HTML(http.StatusOK, "feeds/edit.html", data)
+}
+
+func EditFeed(c *gin.Context) {
+	id := c.Param("id")
+	url := c.PostForm("url")
+
+	var feed models.Feed
+	if err := database.DB.First(&feed, id).Error; err != nil {
+		data := getTemplateData(c, gin.H{
+			"title": "Edit Feed",
+			"error": "Feed not found",
+			"feed":  feed,
+		})
+		c.HTML(http.StatusNotFound, "feeds/edit.html", data)
+		return
+	}
+
+	input := validation.FeedInput{URL: url}
+	if err := validation.ValidateStruct(input); err != nil {
+		data := getTemplateData(c, gin.H{
+			"title": "Edit Feed",
+			"error": validation.FormatValidationErrors(err),
+			"feed":  feed,
+		})
+		c.HTML(http.StatusBadRequest, "feeds/edit.html", data)
+		return
+	}
+
+	var existingFeed models.Feed
+	if err := database.DB.Where("url = ? AND id != ?", input.URL, id).First(&existingFeed).Error; err == nil {
+		data := getTemplateData(c, gin.H{
+			"title": "Edit Feed",
+			"error": "Feed URL already exists",
+			"feed":  feed,
+		})
+		c.HTML(http.StatusBadRequest, "feeds/edit.html", data)
+		return
+	}
+
+	feed.URL = input.URL
+	if err := database.DB.Save(&feed).Error; err != nil {
+		if isUniqueConstraintError(err) {
+			data := getTemplateData(c, gin.H{
+				"title": "Edit Feed",
+				"error": "Feed URL already exists",
+				"feed":  feed,
+			})
+			c.HTML(http.StatusBadRequest, "feeds/edit.html", data)
+			return
+		}
+		data := getTemplateData(c, gin.H{
+			"title": "Edit Feed",
+			"error": "Failed to update feed: " + err.Error(),
+			"feed":  feed,
+		})
+		c.HTML(http.StatusInternalServerError, "feeds/edit.html", data)
+		return
+	}
+
+	session := sessions.Default(c)
+	addFlashSuccess(session, "Feed updated successfully")
+	saveSession(session)
+	c.Redirect(http.StatusFound, "/admin/feeds")
+}
+
 func FetchSingleFeed(c *gin.Context) {
 	id := c.Param("id")
 	session := sessions.Default(c)

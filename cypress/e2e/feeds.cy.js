@@ -88,6 +88,73 @@ describe('Feed Management', () => {
     })
   })
 
+  describe('Edit Feed', () => {
+    let testFeedId
+    let testFeedUrl
+
+    beforeEach(() => {
+      testFeedUrl = `https://example.com/edittest_${Date.now()}.xml`
+      cy.visit('/admin/feeds/new')
+      cy.get('input[name="url"]').type(testFeedUrl)
+      cy.get('form[action="/admin/feeds"] button[type="submit"]').click()
+      cy.visit('/admin/feeds')
+      cy.get('tbody tr').contains(testFeedUrl).parent('tr').find('td').first().then(($td) => {
+        testFeedId = $td.text().trim()
+      })
+    })
+
+    it('should display edit feed form', () => {
+      cy.visit('/admin/feeds')
+      cy.get('tbody tr').contains(testFeedUrl).parent('tr').find('a[href*="/edit"]').click()
+      cy.url().should('include', `/admin/feeds/${testFeedId}/edit`)
+      cy.get('h1').contains('Edit Feed').should('be.visible')
+      cy.get('input[name="url"]').should('have.value', testFeedUrl)
+      cy.get('form[action*="/edit"] button[type="submit"]').should('be.visible').should('contain', 'Update Feed')
+      cy.get('form[action*="/edit"] a[href="/admin/feeds"]').should('be.visible').should('contain', 'Cancel')
+    })
+
+    it('should update feed URL successfully', () => {
+      const newFeedUrl = `https://example.com/updated_${Date.now()}.xml`
+      cy.visit(`/admin/feeds/${testFeedId}/edit`)
+      cy.get('input[name="url"]').clear().type(newFeedUrl)
+      cy.get('form[action*="/edit"] button[type="submit"]').click()
+
+      cy.url().should('include', '/admin/feeds')
+      cy.get('tbody tr').should('contain', newFeedUrl)
+      cy.get('tbody tr').should('not.contain', testFeedUrl)
+    })
+
+    it('should show error when updating feed with duplicate URL', () => {
+      const otherFeedUrl = `https://example.com/other_${Date.now()}.xml`
+      cy.visit('/admin/feeds/new')
+      cy.get('input[name="url"]').type(otherFeedUrl)
+      cy.get('form[action="/admin/feeds"] button[type="submit"]').click()
+
+      cy.visit(`/admin/feeds/${testFeedId}/edit`)
+      cy.get('input[name="url"]').clear().type(otherFeedUrl)
+      cy.get('form[action*="/edit"] button[type="submit"]').click()
+
+      cy.get('h1').contains('Edit Feed').should('be.visible')
+      cy.get('.alert-danger').should('be.visible').should('contain', 'Feed URL already exists')
+      cy.visit('/admin/feeds')
+      cy.get('tbody tr').should('contain', testFeedUrl)
+      cy.get('tbody tr').should('contain', otherFeedUrl)
+    })
+
+    it('should cancel edit and return to feeds list', () => {
+      cy.visit(`/admin/feeds/${testFeedId}/edit`)
+      cy.get('form[action*="/edit"] a[href="/admin/feeds"]').first().click()
+      cy.url().should('eq', Cypress.config('baseUrl') + '/admin/feeds')
+      cy.get('h1').contains('Feed Management').should('be.visible')
+    })
+
+    it('should show error when editing non-existent feed', () => {
+      cy.visit('/admin/feeds/99999/edit', { failOnStatusCode: false })
+      cy.url().should('include', '/admin/feeds')
+      cy.get('.alert-danger').should('be.visible').should('contain', 'Feed not found')
+    })
+  })
+
   describe('Delete Feed', () => {
     let testFeedUrl
 
