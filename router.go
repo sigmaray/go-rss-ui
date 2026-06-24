@@ -15,7 +15,6 @@ func setupRouter() *gin.Engine {
 
 	router.HTMLRender = loadTemplates("./templates")
 	router.Static("/static", "./static")
-	router.GET("/test_feeds/*filepath", handlers.TestFeeds)
 
 	store := cookie.NewStore([]byte(config.GetSessionSecret()))
 	store.Options(sessions.Options{
@@ -69,6 +68,8 @@ func setupRouter() *gin.Engine {
 	router.POST("/logout", handlers.Logout)
 
 	if config.IsCypressMode() {
+		router.GET("/test_feeds/*filepath", handlers.TestFeeds)
+
 		tools := router.Group("/tools")
 		tools.GET("", handlers.ShowTools)
 		tools.POST("/clear-all-tables", handlers.ClearAllTables)
