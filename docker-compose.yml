@@ -9,8 +9,8 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: go_rss_ui_2
       POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,8 +24,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: go-rss-ui-redis
-    ports:
-      - "6379:6379"
+    # ports:
+    #   - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -56,8 +56,9 @@ services:
       RSS_BACKGROUND_FETCH_ENABLED: "true"
       RSS_BACKGROUND_FETCH_INTERVAL: "60"
       RSS_SESSION_SECRET: ${RSS_SESSION_SECRET}
-      RSS_CYPRESS: "true"
-      RSS_PORT: "8082"
+      # RSS_CYPRESS: "true"
+      RSS_PORT: 8082
+      GIN_MODE: release
     ports:
       - "8082:8082"
     depends_on:
