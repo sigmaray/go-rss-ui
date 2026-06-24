@@ -101,3 +101,50 @@ Cypress.Commands.add('shouldBeLoggedOut', () => {
 Cypress.Commands.add('stubConfirm', (accept = true) => {
   cy.on('window:confirm', () => accept)
 })
+
+// --- REST API commands ---
+
+Cypress.Commands.add('apiLogin', (username = 'admin', password = 'password') => {
+  return cy.request({
+    method: 'POST',
+    url: '/api/v1/auth/login',
+    body: { username, password },
+  }).then((response) => {
+    expect(response.status).to.eq(200)
+    expect(response.body).to.have.property('username', username)
+    return response
+  })
+})
+
+Cypress.Commands.add('apiLoginWithSession', (username = 'admin', password = 'password') => {
+  cy.session(['api', Cypress.spec.relative, username, password], () => {
+    cy.apiLogin(username, password)
+  }, {
+    cacheAcrossSpecs: false,
+    validate() {
+      cy.request({
+        url: '/api/v1/users',
+        failOnStatusCode: false,
+      }).its('status').should('eq', 200)
+    },
+  })
+})
+
+Cypress.Commands.add('apiLogout', () => {
+  return cy.request({
+    method: 'POST',
+    url: '/api/v1/auth/logout',
+  }).then((response) => {
+    expect(response.status).to.eq(200)
+    return response
+  })
+})
+
+Cypress.Commands.add('apiRequest', (options) => {
+  const url = options.url.startsWith('/') ? options.url : `/api/v1/${options.url}`
+  return cy.request({
+    failOnStatusCode: options.failOnStatusCode !== false,
+    ...options,
+    url,
+  })
+})

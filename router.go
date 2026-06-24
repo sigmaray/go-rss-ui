@@ -6,6 +6,8 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"go-rss-ui/api"
+	_ "go-rss-ui/docs"
 	"go-rss-ui/config"
 	"go-rss-ui/handlers"
 )
@@ -68,6 +70,8 @@ func setupRouter() *gin.Engine {
 	router.GET("/login", handlers.ShowLogin)
 	router.POST("/login", handlers.Login)
 	router.POST("/logout", handlers.Logout)
+
+	api.RegisterRoutes(router)
 
 	if config.IsCypressMode() {
 		router.GET("/test_feeds/*filepath", handlers.TestFeeds)

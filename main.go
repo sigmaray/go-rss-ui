@@ -1,3 +1,11 @@
+// @title           Go RSS UI API
+// @version         1.0
+// @description     REST API for RSS feed management application
+// @host            localhost:8082
+// @BasePath        /api/v1
+// @securityDefinitions.apikey CookieAuth
+// @in              cookie
+// @name            mysession
 package main
 
 import (

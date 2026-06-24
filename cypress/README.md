@@ -63,6 +63,7 @@ npm test:headed
 | `cypress/e2e/user_management.cy.js` | User CRUD, validation, uniqueness |
 | `cypress/e2e/test_feeds.cy.js` | Fetching items from test feeds, fetch error handling |
 | `cypress/e2e/integration.cy.js` | Full login/logout journey, failed login retry |
+| `cypress/e2e/api.cy.js` | REST API (`/api/v1`): auth, users, feeds, items CRUD, fetch, Swagger |
 
 Most specs reset the database once per file in a `before()` hook:
 
@@ -90,6 +91,10 @@ Defined in `cypress/support/commands.js`:
 | `cy.shouldBeLoggedIn()` | Assert URL includes `/admin` |
 | `cy.shouldBeLoggedOut()` | Assert URL is the home page |
 | `cy.stubConfirm(accept)` | Stub `window.confirm` dialogs (default: accept) |
+| `cy.apiLogin(username, password)` | Log in via `POST /api/v1/auth/login` (default: `admin` / `password`) |
+| `cy.apiLoginWithSession(username, password)` | API login with `cy.session` caching (default: `admin` / `password`) |
+| `cy.apiLogout()` | Log out via `POST /api/v1/auth/logout` |
+| `cy.apiRequest(options)` | HTTP request to API; `url` may be absolute (`/api/v1/...`) or relative (`users`) |
 
 Tool commands accept HTTP `200` or `302` responses (the Go handlers may redirect to `/tools`).
 
