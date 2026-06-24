@@ -76,7 +76,7 @@ The easiest way to run the application is using Docker Compose:
 
 3. Run database migrations:
    ```bash
-   docker-compose exec app ./go-rss-ui migrate
+   docker-compose exec app ./go-rss-ui automigrate
    ```
 
 4. (Optional) Seed default admin user:
@@ -127,7 +127,7 @@ docker-compose logs -f app
 
 4. Run database migrations:
    ```bash
-   go run . migrate
+   go run . automigrate
    ```
 
 5. (Optional) Seed default admin user:
@@ -227,7 +227,7 @@ When seeding users, a default admin user is created:
 
 The application supports several CLI commands:
 
-- `go run . migrate` - Run database migrations (create/update tables)
+- `go run . automigrate` - Run database migrations (create/update tables)
 - `go run . seed-users` - Create default admin user
 - `go run . seed-feeds` - Create default RSS feeds
 - `go run . fetch-feeds` - Fetch and process all RSS feeds (creates/updates items)
@@ -278,7 +278,7 @@ The application supports several CLI commands:
 - `POST /tools/clear-table` - Clear a specific table (requires `name` parameter: users, feeds, or items)
 - `POST /tools/seed-users` - Seed users
 - `POST /tools/seed-feeds` - Seed feeds
-- `POST /tools/migrate` - Run migrations
+- `POST /tools/automigrate` - Run migrations
 - `POST /tools/drop-db` - Drop database
 - `POST /tools/create-db` - Create database
 - `POST /tools/execute-sql` - Execute SQL queries
@@ -411,7 +411,7 @@ go-rss-ui/
 The application uses Gorm's AutoMigrate feature, which automatically creates/updates database tables based on the model definitions. Run migrations with:
 
 ```bash
-go run . migrate
+go run . automigrate
 ```
 
 ### Key Features Implementation

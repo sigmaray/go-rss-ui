@@ -197,7 +197,7 @@ jobs:
           RSS_DB_PASSWORD: postgres
           RSS_DB_NAME: go_rss_ui_test
           RSS_DB_PORT: '5432'
-        run: go run . migrate
+        run: go run . automigrate
       
       - name: Seed users
         env:

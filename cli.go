@@ -22,7 +22,7 @@ func runCLICommand() bool {
 		commands.CommandSeedUsers()
 	case "seed-feeds":
 		commands.CommandSeedFeeds()
-	case "migrate":
+	case "automigrate":
 		commands.CommandMigrate()
 	case "drop-db":
 		commands.CommandDropDB()
@@ -71,7 +71,7 @@ func printAvailableCommands() {
 	fmt.Println("  seed-feeds   - Create default RSS feeds")
 	fmt.Println("  fetch-feeds  - Fetch and process all RSS feeds")
 	fmt.Println("  execute-sql  - Execute SQL query (provide query as argument or via stdin)")
-	fmt.Println("  migrate      - Create tables in database using AutoMigrate")
+	fmt.Println("  automigrate  - Create tables in database using AutoMigrate")
 	fmt.Println("  drop-db      - Delete the application database")
 	fmt.Println("  drop-all-tables - Drop all tables in the database")
 	fmt.Println("  create-db    - Create the application database")
