@@ -29,14 +29,14 @@ func FeedsIndex(c *gin.Context) {
 	data = addPaginationData(data, page, "/admin/feeds", "feeds")
 
 	data = getTemplateData(c, data)
-	c.HTML(http.StatusOK, "feeds.html", data)
+	c.HTML(http.StatusOK, "feeds/index.html", data)
 }
 
 func ShowCreateFeedForm(c *gin.Context) {
 	data := getTemplateData(c, gin.H{
 		"title": "Create New Feed",
 	})
-	c.HTML(http.StatusOK, "create_feed.html", data)
+	c.HTML(http.StatusOK, "feeds/create.html", data)
 }
 
 func CreateFeed(c *gin.Context) {
@@ -51,7 +51,7 @@ func CreateFeed(c *gin.Context) {
 			"title": "Create New Feed",
 			"error": validation.FormatValidationErrors(err),
 		})
-		c.HTML(http.StatusBadRequest, "create_feed.html", data)
+		c.HTML(http.StatusBadRequest, "feeds/create.html", data)
 		return
 	}
 
@@ -62,7 +62,7 @@ func CreateFeed(c *gin.Context) {
 			"title": "Create New Feed",
 			"error": "Feed URL already exists",
 		})
-		c.HTML(http.StatusBadRequest, "create_feed.html", data)
+		c.HTML(http.StatusBadRequest, "feeds/create.html", data)
 		return
 	}
 
@@ -73,14 +73,14 @@ func CreateFeed(c *gin.Context) {
 				"title": "Create New Feed",
 				"error": "Feed URL already exists",
 			})
-			c.HTML(http.StatusBadRequest, "create_feed.html", data)
+			c.HTML(http.StatusBadRequest, "feeds/create.html", data)
 			return
 		}
 		data := getTemplateData(c, gin.H{
 			"title": "Create New Feed",
 			"error": "Failed to create feed: " + err.Error(),
 		})
-		c.HTML(http.StatusInternalServerError, "create_feed.html", data)
+		c.HTML(http.StatusInternalServerError, "feeds/create.html", data)
 		return
 	}
 
@@ -219,5 +219,5 @@ func ShowFeed(c *gin.Context) {
 	data = addPaginationData(data, page, fmt.Sprintf("/admin/feeds/%s", id), "items")
 
 	data = getTemplateData(c, data)
-	c.HTML(http.StatusOK, "feed.html", data)
+	c.HTML(http.StatusOK, "feeds/show.html", data)
 }

@@ -25,10 +25,17 @@ func loadTemplates(templatesDir string) multitemplate.Renderer {
 		panic(err.Error())
 	}
 
-	includes, err := filepath.Glob(templatesDir + "/*.html")
+	rootIncludes, err := filepath.Glob(templatesDir + "/*.html")
 	if err != nil {
 		panic(err.Error())
 	}
+
+	nestedIncludes, err := filepath.Glob(templatesDir + "/*/*.html")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	includes := append(rootIncludes, nestedIncludes...)
 
 	for _, include := range includes {
 		layoutCopy := make([]string, len(layouts))
@@ -36,7 +43,13 @@ func loadTemplates(templatesDir string) multitemplate.Renderer {
 
 		files := append(layoutCopy, include)
 		files = append(files, partials...)
-		renderer.AddFromFilesFuncs(filepath.Base(include), funcMap, files...)
+
+		relPath, err := filepath.Rel(templatesDir, include)
+		if err != nil {
+			panic(err.Error())
+		}
+		name := filepath.ToSlash(relPath)
+		renderer.AddFromFilesFuncs(name, funcMap, files...)
 	}
 
 	return renderer

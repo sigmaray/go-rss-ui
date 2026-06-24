@@ -35,14 +35,14 @@ func UsersIndex(c *gin.Context) {
 	}
 
 	data = getTemplateData(c, data)
-	c.HTML(http.StatusOK, "users.html", data)
+	c.HTML(http.StatusOK, "users/index.html", data)
 }
 
 func ShowCreateUserForm(c *gin.Context) {
 	data := getTemplateData(c, gin.H{
 		"title": "Create New User",
 	})
-	c.HTML(http.StatusOK, "create_user.html", data)
+	c.HTML(http.StatusOK, "users/create.html", data)
 }
 
 func ShowEditUserForm(c *gin.Context) {
@@ -58,7 +58,7 @@ func ShowEditUserForm(c *gin.Context) {
 		"title": "Edit User",
 		"user":  user,
 	})
-	c.HTML(http.StatusOK, "edit_user.html", data)
+	c.HTML(http.StatusOK, "users/edit.html", data)
 }
 
 func CreateUser(c *gin.Context) {
@@ -74,7 +74,7 @@ func CreateUser(c *gin.Context) {
 			"title": "Create New User",
 			"error": validation.FormatValidationErrors(err),
 		})
-		c.HTML(http.StatusBadRequest, "create_user.html", data)
+		c.HTML(http.StatusBadRequest, "users/create.html", data)
 		return
 	}
 
@@ -86,7 +86,7 @@ func CreateUser(c *gin.Context) {
 			"title": "Create New User",
 			"error": "Username already exists",
 		})
-		c.HTML(http.StatusBadRequest, "create_user.html", data)
+		c.HTML(http.StatusBadRequest, "users/create.html", data)
 		return
 	}
 
@@ -98,14 +98,14 @@ func CreateUser(c *gin.Context) {
 				"title": "Create New User",
 				"error": "Username already exists",
 			})
-			c.HTML(http.StatusBadRequest, "create_user.html", data)
+			c.HTML(http.StatusBadRequest, "users/create.html", data)
 			return
 		}
 		data := getTemplateData(c, gin.H{
 			"title": "Create New User",
 			"error": "Failed to create user: " + err.Error(),
 		})
-		c.HTML(http.StatusInternalServerError, "create_user.html", data)
+		c.HTML(http.StatusInternalServerError, "users/create.html", data)
 		return
 	}
 
@@ -129,7 +129,7 @@ func EditUser(c *gin.Context) {
 			"error": "User not found",
 			"user":  user,
 		})
-		c.HTML(http.StatusNotFound, "edit_user.html", data)
+		c.HTML(http.StatusNotFound, "users/edit.html", data)
 		return
 	}
 
@@ -152,7 +152,7 @@ func EditUser(c *gin.Context) {
 			"error": validation.FormatValidationErrors(err),
 			"user":  user,
 		})
-		c.HTML(http.StatusBadRequest, "edit_user.html", data)
+		c.HTML(http.StatusBadRequest, "users/edit.html", data)
 		return
 	}
 
@@ -165,7 +165,7 @@ func EditUser(c *gin.Context) {
 				"error": "Username already exists",
 				"user":  user,
 			})
-			c.HTML(http.StatusBadRequest, "edit_user.html", data)
+			c.HTML(http.StatusBadRequest, "users/edit.html", data)
 			return
 		}
 		user.Username = username
@@ -182,7 +182,7 @@ func EditUser(c *gin.Context) {
 				"error": "Username already exists",
 				"user":  user,
 			})
-			c.HTML(http.StatusBadRequest, "edit_user.html", data)
+			c.HTML(http.StatusBadRequest, "users/edit.html", data)
 			return
 		}
 		data := getTemplateData(c, gin.H{
@@ -190,7 +190,7 @@ func EditUser(c *gin.Context) {
 			"error": "Failed to update user: " + err.Error(),
 			"user":  user,
 		})
-		c.HTML(http.StatusInternalServerError, "edit_user.html", data)
+		c.HTML(http.StatusInternalServerError, "users/edit.html", data)
 		return
 	}
 

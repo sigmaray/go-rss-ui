@@ -42,7 +42,7 @@ func ItemsIndex(c *gin.Context) {
 	}
 
 	data = getTemplateData(c, data)
-	c.HTML(http.StatusOK, "items.html", data)
+	c.HTML(http.StatusOK, "items/index.html", data)
 }
 
 func ShowItem(c *gin.Context) {
@@ -55,7 +55,7 @@ func ShowItem(c *gin.Context) {
 			"title": "404 - Item Not Found",
 			"error": "Item not found",
 		})
-		c.HTML(http.StatusNotFound, "item.html", data)
+		c.HTML(http.StatusNotFound, "items/show.html", data)
 		return
 	}
 
@@ -82,7 +82,7 @@ func ShowItem(c *gin.Context) {
 		"title": item.Title,
 		"item":  itemData,
 	})
-	c.HTML(http.StatusOK, "item.html", data)
+	c.HTML(http.StatusOK, "items/show.html", data)
 }
 
 func DeleteAllItems(c *gin.Context) {
