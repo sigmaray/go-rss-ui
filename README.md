@@ -137,7 +137,7 @@ docker-compose logs -f app
 
 6. Run the application:
    ```bash
-   go run .
+   go run . server
    ```
 
 The application will start on `http://localhost:8082` (default port).
@@ -227,6 +227,7 @@ When seeding users, a default admin user is created:
 
 The application supports several CLI commands:
 
+- `go run . server` (or `go run . s`) - Start the web server
 - `go run . automigrate` - Run database migrations (create/update tables)
 - `go run . seed-users` - Create default admin user
 - `go run . seed-feeds` - Create default RSS feeds
@@ -328,7 +329,7 @@ The application supports several CLI commands:
    RSS_PORT=8083 RSS_DB_NAME=go_rss_ui_test RSS_CYPRESS=1 air
 
    # Or using go run
-   RSS_PORT=8083 RSS_DB_NAME=go_rss_ui_test RSS_CYPRESS=1 go run .
+   RSS_PORT=8083 RSS_DB_NAME=go_rss_ui_test RSS_CYPRESS=1 go run . server
    ```
 
    The server will start on `http://localhost:8083` (as configured in `cypress.config.js`).

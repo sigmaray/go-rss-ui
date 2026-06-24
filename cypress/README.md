@@ -13,7 +13,7 @@ End-to-end tests for the Go RSS UI application using Cypress.
 Cypress tests call `/tools/*` endpoints (`clear-all-tables`, `seed-users`, `clear-table`, etc.). Those routes are only available when Cypress mode is enabled:
 
 ```bash
-RSS_PORT=8083 RSS_DB_NAME=go_rss_ui_test RSS_CYPRESS=1 go run .
+RSS_PORT=8083 RSS_DB_NAME=go_rss_ui_test RSS_CYPRESS=1 go run . server
 
 # Or with hot reload:
 RSS_CYPRESS=true RSS_PORT=8083 RSS_DB_NAME=go_rss_ui_test air

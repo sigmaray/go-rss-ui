@@ -11,11 +11,14 @@ import (
 
 func runCLICommand() bool {
 	if len(os.Args) <= 1 {
-		return false
+		showHelp()
+		return true
 	}
 
 	command := os.Args[1]
 	switch command {
+	case "s", "server":
+		return false
 	case "clear-users":
 		commands.CommandClearUsers()
 	case "seed-users":
@@ -38,12 +41,23 @@ func runCLICommand() bool {
 		commands.CommandDumpDBStructure()
 	default:
 		fmt.Println("Unknown command:", command)
-		fmt.Println("\nAvailable commands:")
-		printAvailableCommands()
+		fmt.Println()
+		showHelp()
 		os.Exit(1)
 	}
 
 	return true
+}
+
+func showHelp() {
+	fmt.Println("Go RSS UI Application")
+	fmt.Println()
+	fmt.Println("Usage:")
+	fmt.Println("  go run . server          Start the web server")
+	fmt.Println("  go run . <command>       Run a CLI command")
+	fmt.Println()
+	fmt.Println("Available commands:")
+	printAvailableCommands()
 }
 
 func showStartupInfo() {
@@ -53,19 +67,14 @@ func showStartupInfo() {
 	fmt.Println("=" + strings.Repeat("=", 70) + "=")
 	fmt.Println()
 	fmt.Printf("Starting web server on http://localhost:%s\n", port)
-	fmt.Println()
-	fmt.Println("When you run the application without a command, it starts the web server.")
 	fmt.Printf("You can access the application in your browser at http://localhost:%s\n", port)
-	fmt.Println()
-	fmt.Println("Available CLI commands:")
-	fmt.Println()
-	printAvailableCommands()
 	fmt.Println()
 	fmt.Println("=" + strings.Repeat("=", 70) + "=")
 	fmt.Println()
 }
 
 func printAvailableCommands() {
+	fmt.Println("  server, s    - Start the web server")
 	fmt.Println("  clear-users  - Clear all data from users table")
 	fmt.Println("  seed-users   - Create a standard admin user")
 	fmt.Println("  seed-feeds   - Create default RSS feeds")

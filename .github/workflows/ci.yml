@@ -220,7 +220,7 @@ jobs:
           RSS_BACKGROUND_FETCH_ENABLED: 'false'
         run: |
           go build -o tmp/main .
-          ./tmp/main &
+          ./tmp/main server &
           echo $! > /tmp/app.pid
           sleep 5
           curl --retry 10 --retry-delay 2 --retry-connrefused http://localhost:8083/ || exit 1
