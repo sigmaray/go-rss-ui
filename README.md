@@ -76,7 +76,7 @@ The easiest way to run the application is using Docker Compose:
 
 3. Run database migrations:
    ```bash
-   docker-compose exec app ./go-rss-ui automigrate
+   docker-compose exec app ./go-rss-ui migrate
    ```
 
 4. (Optional) Seed default admin user:
@@ -127,7 +127,7 @@ docker-compose logs -f app
 
 4. Run database migrations:
    ```bash
-   go run . automigrate
+   go run . migrate
    ```
 
 5. (Optional) Seed default admin user:
@@ -228,7 +228,10 @@ When seeding users, a default admin user is created:
 The application supports several CLI commands:
 
 - `go run . server` (or `go run . s`) - Start the web server
-- `go run . automigrate` - Run database migrations (create/update tables)
+- `go run . migrate` - Run pending database migrations (goose)
+- `go run . migrate-status` - Show database migration status
+- `go run . migrate-down` - Roll back the last database migration
+- `go run . automigrate` - Create tables in database using AutoMigrate
 - `go run . seed-users` - Create default admin user
 - `go run . seed-feeds` - Create default RSS feeds
 - `go run . fetch-feeds` - Fetch and process all RSS feeds (creates/updates items)
@@ -279,7 +282,8 @@ The application supports several CLI commands:
 - `POST /tools/clear-table` - Clear a specific table (requires `name` parameter: users, feeds, or items)
 - `POST /tools/seed-users` - Seed users
 - `POST /tools/seed-feeds` - Seed feeds
-- `POST /tools/automigrate` - Run migrations
+- `POST /tools/automigrate` - Run migrations (AutoMigrate)
+- `POST /tools/migrate` - Run migrations (goose)
 - `POST /tools/drop-db` - Drop database
 - `POST /tools/create-db` - Create database
 - `POST /tools/execute-sql` - Execute SQL queries
@@ -409,10 +413,22 @@ go-rss-ui/
 
 ### Database Migrations
 
-The application uses Gorm's AutoMigrate feature, which automatically creates/updates database tables based on the model definitions. Run migrations with:
+The application uses [goose](https://github.com/pressly/goose) for SQL migrations. Migration files live in `database/migrations/`.
 
 ```bash
-go run . automigrate
+go run . migrate
+go run . migrate-status
+go run . migrate-down
+```
+
+To add a new migration, create a file in `database/migrations/` with the next sequential number, for example `00002_add_column.sql`:
+
+```sql
+-- +goose Up
+ALTER TABLE feeds ADD COLUMN example TEXT;
+
+-- +goose Down
+ALTER TABLE feeds DROP COLUMN example;
 ```
 
 ### Key Features Implementation

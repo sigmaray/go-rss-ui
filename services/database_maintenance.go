@@ -7,9 +7,6 @@ import (
 
 	"go-rss-ui/config"
 	"go-rss-ui/database"
-	"go-rss-ui/models"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 type DropAllTablesResult struct {
@@ -19,12 +16,15 @@ type DropAllTablesResult struct {
 }
 
 func MigrateDatabase() error {
-	db, err := gorm.Open(postgres.Open(GetAppDSN()), &gorm.Config{})
-	if err != nil {
-		return err
-	}
+	return database.RunMigrations(GetAppDSN())
+}
 
-	return db.AutoMigrate(&models.User{}, &models.Feed{}, &models.Item{})
+func RollbackMigration() error {
+	return database.RollbackMigration(GetAppDSN())
+}
+
+func MigrationStatus() error {
+	return database.MigrationStatus(GetAppDSN())
 }
 
 func DropAllTables() (DropAllTablesResult, error) {
@@ -73,7 +73,7 @@ func DropDatabase() error {
 	if err != nil {
 		return err
 	}
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 
 	_, _ = sqlDB.Exec(`
 		SELECT pg_terminate_backend(pg_stat_activity.pid)
@@ -92,7 +92,7 @@ func CreateDatabase() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 
 	var exists bool
 	err = sqlDB.QueryRow(

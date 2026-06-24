@@ -80,6 +80,7 @@ func setupRouter() *gin.Engine {
 		tools.POST("/drop-all-tables", handlers.DropAllTables)
 		tools.POST("/create-db", handlers.CreateDB)
 		tools.POST("/automigrate", handlers.Migrate)
+		tools.POST("/migrate", handlers.Migrate)
 		tools.POST("/dump-db-structure", handlers.DumpDBStructure)
 		tools.POST("/execute-sql", handlers.ExecuteSQL)
 	}

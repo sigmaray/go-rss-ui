@@ -84,6 +84,13 @@
             </div>
 
             <div class="mb-3">
+                <form action="/tools/migrate" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-primary">Run Migrations</button>
+                </form>
+                <p class="text-muted small mt-2">Applies pending database migrations (goose)</p>
+            </div>
+
+            <div class="mb-3">
                 <form action="/tools/dump-db-structure" method="post" class="d-inline">
                     <button type="submit" class="btn btn-success">Generate structure.sql</button>
                 </form>

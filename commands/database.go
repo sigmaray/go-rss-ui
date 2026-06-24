@@ -30,6 +30,20 @@ func CommandMigrate() {
 	app.Logger.Info().Msg("Database migration completed successfully")
 }
 
+func CommandMigrateStatus() {
+	if err := services.MigrationStatus(); err != nil {
+		app.Logger.Fatal().Err(err).Msg("Failed to get migration status")
+	}
+}
+
+func CommandMigrateDown() {
+	if err := services.RollbackMigration(); err != nil {
+		app.Logger.Fatal().Err(err).Msg("Failed to rollback migration")
+	}
+
+	app.Logger.Info().Msg("Database migration rolled back successfully")
+}
+
 func DropAllTables() (DropAllTablesResult, error) {
 	return services.DropAllTables()
 }

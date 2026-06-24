@@ -14,7 +14,7 @@ func RunSQLQuery(sqlQuery string) (SQLQueryResult, error) {
 	if err != nil {
 		return SQLQueryResult{}, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	columns, err := rows.Columns()
 	if err != nil {

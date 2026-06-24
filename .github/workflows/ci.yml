@@ -18,7 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
       
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -48,12 +48,12 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
       
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: latest
+          version: v2.4.0
           args: --timeout=5m
 
   test-go:
@@ -67,7 +67,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
       
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -158,7 +158,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
       
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -197,7 +197,7 @@ jobs:
           RSS_DB_PASSWORD: postgres
           RSS_DB_NAME: go_rss_ui_test
           RSS_DB_PORT: '5432'
-        run: go run . automigrate
+        run: go run . migrate
       
       - name: Seed users
         env:
