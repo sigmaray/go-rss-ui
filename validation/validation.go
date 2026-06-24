@@ -40,6 +40,13 @@ type UserInput struct {
 	Password string `validate:"required,min=8,max=128" json:"password"`
 }
 
+// UserInputCreate represents user input for creation with password confirmation.
+type UserInputCreate struct {
+	Username        string `validate:"required,username,min=3,max=50" json:"username"`
+	Password        string `validate:"required,min=8,max=128" json:"password"`
+	PasswordConfirm string `validate:"required,eqfield=Password" json:"password_confirm"`
+}
+
 // UserInputUpdate represents user input for editing (password optional)
 type UserInputUpdate struct {
 	Username string `validate:"required,username,min=3,max=50" json:"username"`
@@ -151,6 +158,8 @@ func FormatValidationErrors(err error) string {
 			message = fmt.Sprintf("%s must be at most %s characters long", field, fieldError.Param())
 		case "username":
 			message = fmt.Sprintf("%s can only contain letters, numbers, underscores, and hyphens, and must start with a letter or number", field)
+		case "eqfield":
+			message = fmt.Sprintf("%s must match %s", field, fieldError.Param())
 		// case "password_strength":
 		// 	message = fmt.Sprintf("%s must contain at least one letter and one number", field)
 		case "http_url":

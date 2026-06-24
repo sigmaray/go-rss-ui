@@ -52,3 +52,14 @@ func openAdminSQLDB() (*sql.DB, error) {
 func quoteIdentifier(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
+
+func isUniqueConstraintError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := strings.ToLower(err.Error())
+	return strings.Contains(errStr, "duplicate key") ||
+		strings.Contains(errStr, "unique constraint") ||
+		strings.Contains(errStr, "23505") ||
+		strings.Contains(errStr, "unique constraint failed")
+}

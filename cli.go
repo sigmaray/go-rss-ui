@@ -23,6 +23,8 @@ func runCLICommand() bool {
 		commands.CommandClearUsers()
 	case "seed-users":
 		commands.CommandSeedUsers()
+	case "create-user":
+		commands.CommandCreateUser()
 	case "seed-feeds":
 		commands.CommandSeedFeeds()
 	case "migrate":
@@ -83,6 +85,7 @@ func printAvailableCommands() {
 	fmt.Println("  server, s    - Start the web server")
 	fmt.Println("  clear-users  - Clear all data from users table")
 	fmt.Println("  seed-users   - Create a standard admin user")
+	fmt.Println("  create-user  - Create a new user interactively")
 	fmt.Println("  seed-feeds   - Create default RSS feeds")
 	fmt.Println("  fetch-feeds  - Fetch and process all RSS feeds")
 	fmt.Println("  execute-sql  - Execute SQL query (provide query as argument or via stdin)")

@@ -10,6 +10,7 @@ import (
 	"go-rss-ui/commands"
 	"go-rss-ui/database"
 	"go-rss-ui/models"
+	"go-rss-ui/services"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -192,6 +193,76 @@ func TestSeedUsers(t *testing.T) {
 			} else {
 				assert.True(t, adminUser.CheckPassword("existingpassword"), "Password should remain as original for existing user")
 			}
+		})
+	}
+}
+
+func TestCreateUser(t *testing.T) {
+	initTestLogger()
+
+	tests := []struct {
+		name        string
+		username    string
+		password    string
+		setup       func(*gorm.DB)
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:     "create new user",
+			username: "newuser",
+			password: "password123",
+		},
+		{
+			name:     "duplicate username",
+			username: "existing",
+			password: "password123",
+			setup: func(db *gorm.DB) {
+				db.Create(&models.User{Username: "existing", Password: "oldpassword"})
+			},
+			expectError: true,
+			errorMsg:    "username already exists",
+		},
+		{
+			name:        "invalid username",
+			username:    "_invalid",
+			password:    "password123",
+			expectError: true,
+		},
+		{
+			name:        "password too short",
+			username:    "validuser",
+			password:    "short",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := setupTestDB(t)
+			database.DB = db
+
+			if tt.setup != nil {
+				tt.setup(db)
+			}
+
+			user, err := services.CreateUser(tt.username, tt.password)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorMsg != "" {
+					assert.Contains(t, err.Error(), tt.errorMsg)
+				}
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.username, user.Username)
+
+			var savedUser models.User
+			err = db.Where("username = ?", tt.username).First(&savedUser).Error
+			assert.NoError(t, err)
+			assert.True(t, savedUser.CheckPassword(tt.password))
 		})
 	}
 }
