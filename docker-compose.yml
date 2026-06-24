@@ -55,12 +55,12 @@ services:
       RSS_REDIS_PASSWORD: ""
       RSS_BACKGROUND_FETCH_ENABLED: "true"
       RSS_BACKGROUND_FETCH_INTERVAL: "60"
-      RSS_SESSION_SECRET: ${RSS_SESSION_SECRET}
+      RSS_SESSION_SECRET: ${RSS_SESSION_SECRET:?RSS_SESSION_SECRET is required}
       # RSS_CYPRESS: "true"
-      RSS_PORT: 8082
+      RSS_PORT: ${RSS_PORT:-8082}
       GIN_MODE: release
     ports:
-      - "8082:8082"
+      - "${RSS_PORT:-8082}:${RSS_PORT:-8082}"
     depends_on:
       postgres:
         condition: service_healthy

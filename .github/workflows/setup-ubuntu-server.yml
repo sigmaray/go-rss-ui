@@ -1,0 +1,75 @@
+name: setup-ubuntu-server
+
+on:
+  push:
+  pull_request:
+
+env:
+  APP_DIR: /tmp/go-rss-ui-ci
+  APP_PORT: '8082'
+  RSS_SESSION_SECRET: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: scripts
+
+  deploy-integration:
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.ubuntu }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Simulate fresh Ubuntu (no Docker)
+        run: |
+          sudo systemctl stop docker docker.socket containerd 2>/dev/null || true
+          sudo apt-get remove -y --purge --allow-change-held-packages \
+            docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin \
+            docker-ce-rootless-extras moby-engine moby-cli docker.io docker-compose-v2 \
+            docker-doc podman-docker 2>/dev/null || true
+          sudo apt-get autoremove -y 2>/dev/null || true
+          sudo rm -rf /usr/libexec/docker/cli-plugins
+          sudo rm -f /usr/bin/docker /usr/local/bin/docker-compose 2>/dev/null || true
+          if command -v docker >/dev/null 2>&1; then
+            echo "Docker is still present after removal attempt:"
+            command -v docker
+            docker --version || true
+            exit 1
+          fi
+
+      - name: Copy workspace into app directory
+        run: |
+          sudo mkdir -p "$APP_DIR"
+          sudo rsync -a --delete \
+            --exclude '.git' \
+            ./ "$APP_DIR/"
+
+      - name: Setup server and deploy (--skip-clone)
+        run: |
+          sudo RSS_SESSION_SECRET="$RSS_SESSION_SECRET" \
+            APP_PORT="$APP_PORT" \
+            bash scripts/setup-ubuntu-server.sh \
+              --no-ufw \
+              --app-dir "$APP_DIR" \
+              --docker-user "$USER" \
+              --deploy \
+              --skip-clone
+
+      - name: Verify setup and health check
+        run: |
+          docker --version
+          docker compose version
+          test -f "$APP_DIR/.env"
+          test "$(stat -c '%a' "$APP_DIR/.env")" = "600"
+          curl -fsS "http://127.0.0.1:${APP_PORT}/" | head -c 200
+          sudo docker compose -f "$APP_DIR/docker-compose.yml" ps
