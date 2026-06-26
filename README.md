@@ -81,7 +81,7 @@ The easiest way to run the application is using Docker Compose:
 
 4. (Optional) Seed default admin user:
    ```bash
-   docker-compose exec app ./go-rss-ui seed-users
+   docker-compose exec app ./go-rss-ui users-seed
    ```
 
 The application will be available at `http://localhost:8082`.
@@ -132,7 +132,7 @@ docker-compose logs -f app
 
 5. (Optional) Seed default admin user:
    ```bash
-   go run . seed-users
+   go run . users-seed
    ```
 
 6. Run the application:
@@ -232,14 +232,14 @@ The application supports several CLI commands:
 - `go run . migrate-status` - Show database migration status
 - `go run . migrate-down` - Roll back the last database migration
 - `go run . automigrate` - Create tables in database using AutoMigrate
-- `go run . seed-users` - Create default admin user
-- `go run . seed-feeds` - Create default RSS feeds
-- `go run . fetch-feeds` - Fetch and process all RSS feeds (creates/updates items)
+- `go run . users-seed` - Create default admin user
+- `go run . feeds-seed` - Create default RSS feeds
+- `go run . feeds-fetch` - Fetch and process all RSS feeds (creates/updates items)
 - `go run . execute-sql "SELECT * FROM feeds"` - Execute SQL query (provide query as argument)
 - `go run . execute-sql` - Execute SQL query interactively (reads from stdin)
-- `go run . clear-users` - Clear all users from database
-- `go run . create-db` - Create the application database
-- `go run . drop-db` - Drop the application database
+- `go run . users-clear` - Clear all users from database
+- `go run . db-create` - Create the application database
+- `go run . db-drop` - Drop the application database
 
 ## API Endpoints
 

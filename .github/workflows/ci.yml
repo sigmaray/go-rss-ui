@@ -188,7 +188,7 @@ jobs:
           RSS_DB_NAME: go_rss_ui_test
           RSS_DB_PORT: '5432'
         run: |
-          go run . create-db || true
+          go run . db-create || true
       
       - name: Run migrations
         env:
@@ -206,7 +206,7 @@ jobs:
           RSS_DB_PASSWORD: postgres
           RSS_DB_NAME: go_rss_ui_test
           RSS_DB_PORT: '5432'
-        run: go run . seed-users
+        run: go run . users-seed
       
       - name: Start application
         env:
