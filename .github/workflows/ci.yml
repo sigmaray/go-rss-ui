@@ -132,6 +132,23 @@ jobs:
           docker images go-rss-ui:latest
           docker run --rm go-rss-ui:latest --help || true
 
+  docker-compose:
+    name: Verify Docker Compose
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GO_RSS_UI_SESSION_SECRET: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+      GO_RSS_UI_DB_PASSWORD: postgres
+      GO_RSS_UI_REDIS_PASSWORD: ci-redis
+      GO_RSS_UI_PORT: '18082'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify all docker compose files
+        run: bash scripts/verify-docker-compose.sh
+
   test:
     name: Run Cypress Tests
     runs-on: ubuntu-latest
