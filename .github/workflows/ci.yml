@@ -182,42 +182,42 @@ jobs:
       
       - name: Create database
         env:
-          RSS_DB_HOST: localhost
-          RSS_DB_USER: postgres
-          RSS_DB_PASSWORD: postgres
-          RSS_DB_NAME: go_rss_ui_test
-          RSS_DB_PORT: '5432'
+          GO_RSS_UI_DB_HOST: localhost
+          GO_RSS_UI_DB_USER: postgres
+          GO_RSS_UI_DB_PASSWORD: postgres
+          GO_RSS_UI_DB_NAME: go_rss_ui_test
+          GO_RSS_UI_DB_PORT: '5432'
         run: |
           go run . db-create || true
       
       - name: Run migrations
         env:
-          RSS_DB_HOST: localhost
-          RSS_DB_USER: postgres
-          RSS_DB_PASSWORD: postgres
-          RSS_DB_NAME: go_rss_ui_test
-          RSS_DB_PORT: '5432'
+          GO_RSS_UI_DB_HOST: localhost
+          GO_RSS_UI_DB_USER: postgres
+          GO_RSS_UI_DB_PASSWORD: postgres
+          GO_RSS_UI_DB_NAME: go_rss_ui_test
+          GO_RSS_UI_DB_PORT: '5432'
         run: go run . migrate
       
       - name: Seed users
         env:
-          RSS_DB_HOST: localhost
-          RSS_DB_USER: postgres
-          RSS_DB_PASSWORD: postgres
-          RSS_DB_NAME: go_rss_ui_test
-          RSS_DB_PORT: '5432'
+          GO_RSS_UI_DB_HOST: localhost
+          GO_RSS_UI_DB_USER: postgres
+          GO_RSS_UI_DB_PASSWORD: postgres
+          GO_RSS_UI_DB_NAME: go_rss_ui_test
+          GO_RSS_UI_DB_PORT: '5432'
         run: go run . users-seed
       
       - name: Start application
         env:
-          RSS_DB_HOST: localhost
-          RSS_DB_USER: postgres
-          RSS_DB_PASSWORD: postgres
-          RSS_DB_NAME: go_rss_ui_test
-          RSS_DB_PORT: '5432'
-          RSS_PORT: '8083'
-          RSS_CYPRESS: 'true'
-          RSS_BACKGROUND_FETCH_ENABLED: 'false'
+          GO_RSS_UI_DB_HOST: localhost
+          GO_RSS_UI_DB_USER: postgres
+          GO_RSS_UI_DB_PASSWORD: postgres
+          GO_RSS_UI_DB_NAME: go_rss_ui_test
+          GO_RSS_UI_DB_PORT: '5432'
+          GO_RSS_UI_PORT: '8083'
+          GO_RSS_UI_CYPRESS: 'true'
+          GO_RSS_UI_BACKGROUND_FETCH_ENABLED: 'false'
         run: |
           go build -o tmp/main .
           ./tmp/main server &

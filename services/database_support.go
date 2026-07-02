@@ -19,7 +19,7 @@ func ensurePrimaryDatabase() {
 
 func GetAdminDSN() string {
 	host, user, password, _, port := config.GetDBConfig()
-	sslmode := config.GetEnvOrDefault("RSS_DB_SSLMODE", "disable")
+	sslmode := config.GetEnvOrDefault("GO_RSS_UI_DB_SSLMODE", "disable")
 
 	return fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=postgres port=%s sslmode=%s",

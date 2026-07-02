@@ -1,0 +1,77 @@
+# Local development and tests: bundled PostgreSQL and Redis.
+# Usage: docker compose -f docker-compose.with-infra.yml up -d
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: go-rss-ui-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: go_rss_ui
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - go-rss-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: go-rss-ui-redis
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - go-rss-network
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: go-rss-ui-app
+    environment:
+      GO_RSS_UI_DB_HOST: postgres
+      GO_RSS_UI_DB_USER: postgres
+      GO_RSS_UI_DB_PASSWORD: postgres
+      GO_RSS_UI_DB_NAME: go_rss_ui
+      GO_RSS_UI_DB_PORT: "5432"
+      GO_RSS_UI_DB_SSLMODE: disable
+      GO_RSS_UI_DB_TIMEZONE: UTC
+      GO_RSS_UI_REDIS_HOST: redis
+      GO_RSS_UI_REDIS_PORT: "6379"
+      GO_RSS_UI_REDIS_PASSWORD: ""
+      GO_RSS_UI_BACKGROUND_FETCH_ENABLED: "true"
+      GO_RSS_UI_BACKGROUND_FETCH_INTERVAL: "60"
+      GO_RSS_UI_SESSION_SECRET: ${GO_RSS_UI_SESSION_SECRET:?GO_RSS_UI_SESSION_SECRET is required}
+      GO_RSS_UI_PORT: ${GO_RSS_UI_PORT:-8082}
+      GIN_MODE: release
+    ports:
+      - "${GO_RSS_UI_PORT:-8082}:${GO_RSS_UI_PORT:-8082}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - go-rss-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  go-rss-network:
+    driver: bridge

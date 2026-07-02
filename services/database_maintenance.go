@@ -117,7 +117,7 @@ func CreateDatabase() (bool, error) {
 
 func DumpDBStructure() error {
 	host, user, password, dbname, port := config.GetDBConfig()
-	sslmode := config.GetEnvOrDefault("RSS_DB_SSLMODE", "disable")
+	sslmode := config.GetEnvOrDefault("GO_RSS_UI_DB_SSLMODE", "disable")
 
 	cmd := exec.Command(
 		"pg_dump",

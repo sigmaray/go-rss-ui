@@ -7,12 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-gonic/gin"
 	"go-rss-ui/config"
 	"go-rss-ui/database"
 	"go-rss-ui/models"
 	"go-rss-ui/services"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
 )
 
 // EnvVarInfo contains information about an environment variable
@@ -55,78 +56,78 @@ func ShowInfo(c *gin.Context) {
 	// Get environment variables
 	envVars := []EnvVarInfo{
 		{
-			Name:        "RSS_DATABASE_URL",
-			Value:       maskPassword(os.Getenv("RSS_DATABASE_URL")),
-			Description: "Complete PostgreSQL connection string (takes precedence over individual RSS_DB_* variables)",
+			Name:        "GO_RSS_UI_DATABASE_URL",
+			Value:       maskPassword(os.Getenv("GO_RSS_UI_DATABASE_URL")),
+			Description: "Complete PostgreSQL connection string (takes precedence over individual GO_RSS_UI_DB_* variables)",
 		},
 		{
-			Name:        "RSS_DB_HOST",
-			Value:       config.GetEnvOrDefault("RSS_DB_HOST", "localhost (default)"),
+			Name:        "GO_RSS_UI_DB_HOST",
+			Value:       config.GetEnvOrDefault("GO_RSS_UI_DB_HOST", "localhost (default)"),
 			Description: "PostgreSQL database host",
 		},
 		{
-			Name:        "RSS_DB_USER",
-			Value:       config.GetEnvOrDefault("RSS_DB_USER", "postgres (default)"),
+			Name:        "GO_RSS_UI_DB_USER",
+			Value:       config.GetEnvOrDefault("GO_RSS_UI_DB_USER", "postgres (default)"),
 			Description: "PostgreSQL database user",
 		},
 		{
-			Name:        "RSS_DB_PASSWORD",
-			Value:       maskPassword(config.GetEnvOrDefault("RSS_DB_PASSWORD", "postgres (default)")),
+			Name:        "GO_RSS_UI_DB_PASSWORD",
+			Value:       maskPassword(config.GetEnvOrDefault("GO_RSS_UI_DB_PASSWORD", "postgres (default)")),
 			Description: "PostgreSQL database password",
 		},
 		{
-			Name:        "RSS_DB_NAME",
-			Value:       config.GetEnvOrDefault("RSS_DB_NAME", "go_rss_ui_2 (default)"),
+			Name:        "GO_RSS_UI_DB_NAME",
+			Value:       config.GetEnvOrDefault("GO_RSS_UI_DB_NAME", "go_rss_ui (default)"),
 			Description: "PostgreSQL database name",
 		},
 		{
-			Name:        "RSS_DB_PORT",
-			Value:       config.GetEnvOrDefault("RSS_DB_PORT", "5432 (default)"),
+			Name:        "GO_RSS_UI_DB_PORT",
+			Value:       config.GetEnvOrDefault("GO_RSS_UI_DB_PORT", "5432 (default)"),
 			Description: "PostgreSQL database port",
 		},
 		{
-			Name:        "RSS_DB_SSLMODE",
-			Value:       config.GetEnvOrDefault("RSS_DB_SSLMODE", "disable (default)"),
+			Name:        "GO_RSS_UI_DB_SSLMODE",
+			Value:       config.GetEnvOrDefault("GO_RSS_UI_DB_SSLMODE", "disable (default)"),
 			Description: "PostgreSQL SSL mode",
 		},
 		{
-			Name:        "RSS_DB_TIMEZONE",
-			Value:       config.GetEnvOrDefault("RSS_DB_TIMEZONE", "Asia/Shanghai (default)"),
+			Name:        "GO_RSS_UI_DB_TIMEZONE",
+			Value:       config.GetEnvOrDefault("GO_RSS_UI_DB_TIMEZONE", "Asia/Shanghai (default)"),
 			Description: "PostgreSQL timezone",
 		},
 		{
-			Name:        "RSS_BACKGROUND_FETCH_ENABLED",
-			Value:       getEnvValueOrDefault("RSS_BACKGROUND_FETCH_ENABLED", "true (default)"),
+			Name:        "GO_RSS_UI_BACKGROUND_FETCH_ENABLED",
+			Value:       getEnvValueOrDefault("GO_RSS_UI_BACKGROUND_FETCH_ENABLED", "true (default)"),
 			Description: "Enable/disable background feed fetching",
 		},
 		{
-			Name:        "RSS_BACKGROUND_FETCH_INTERVAL",
+			Name:        "GO_RSS_UI_BACKGROUND_FETCH_INTERVAL",
 			Value:       fmt.Sprintf("%d (default: 60)", config.GetBackgroundFetchInterval()),
 			Description: "Background feed fetch interval in seconds",
 		},
 		{
-			Name:        "RSS_CYPRESS",
-			Value:       getEnvValueOrDefault("RSS_CYPRESS", "false (default)"),
+			Name:        "GO_RSS_UI_CYPRESS",
+			Value:       getEnvValueOrDefault("GO_RSS_UI_CYPRESS", "false (default)"),
 			Description: "Enable Cypress mode (enables /tools page for testing)",
 		},
 		{
-			Name:        "RSS_PORT",
-			Value:       config.GetEnvOrDefault("RSS_PORT", "8082 (default)"),
+			Name:        "GO_RSS_UI_PORT",
+			Value:       config.GetEnvOrDefault("GO_RSS_UI_PORT", "8082 (default)"),
 			Description: "Server port",
 		},
 		{
-			Name:        "RSS_REDIS_HOST",
-			Value:       config.GetEnvOrDefault("RSS_REDIS_HOST", "localhost (default)"),
+			Name:        "GO_RSS_UI_REDIS_HOST",
+			Value:       config.GetEnvOrDefault("GO_RSS_UI_REDIS_HOST", "localhost (default)"),
 			Description: "Redis host",
 		},
 		{
-			Name:        "RSS_REDIS_PORT",
-			Value:       config.GetEnvOrDefault("RSS_REDIS_PORT", "6379 (default)"),
+			Name:        "GO_RSS_UI_REDIS_PORT",
+			Value:       config.GetEnvOrDefault("GO_RSS_UI_REDIS_PORT", "6379 (default)"),
 			Description: "Redis port",
 		},
 		{
-			Name:        "RSS_REDIS_PASSWORD",
-			Value:       maskPassword(config.GetEnvOrDefault("RSS_REDIS_PASSWORD", "(empty)")),
+			Name:        "GO_RSS_UI_REDIS_PASSWORD",
+			Value:       maskPassword(config.GetEnvOrDefault("GO_RSS_UI_REDIS_PASSWORD", "(empty)")),
 			Description: "Redis password",
 		},
 	}

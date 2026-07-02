@@ -111,18 +111,18 @@ docker-compose logs -f app
 
 3. Set up PostgreSQL database and configure the connection string:
    ```bash
-   export RSS_DATABASE_URL="host=localhost user=youruser password=yourpass dbname=yourdb port=5432 sslmode=disable"
+   export GO_RSS_UI_DATABASE_URL="host=localhost user=youruser password=yourpass dbname=yourdb port=5432 sslmode=disable"
    ```
    Or use individual variables:
    ```bash
-   export RSS_DB_HOST=localhost
-   export RSS_DB_USER=youruser
-   export RSS_DB_PASSWORD=yourpass
-   export RSS_DB_NAME=yourdb
-   export RSS_DB_PORT=5432
-   export RSS_DB_SSLMODE=disable
-   export RSS_DB_TIMEZONE=UTC
-   export RSS_SESSION_SECRET=replace-with-a-long-random-secret-at-least-32-characters
+   export GO_RSS_UI_DB_HOST=localhost
+   export GO_RSS_UI_DB_USER=youruser
+   export GO_RSS_UI_DB_PASSWORD=yourpass
+   export GO_RSS_UI_DB_NAME=yourdb
+   export GO_RSS_UI_DB_PORT=5432
+   export GO_RSS_UI_DB_SSLMODE=disable
+   export GO_RSS_UI_DB_TIMEZONE=UTC
+   export GO_RSS_UI_SESSION_SECRET=replace-with-a-long-random-secret-at-least-32-characters
    ```
 
 4. Run database migrations:
@@ -156,28 +156,28 @@ To run the container:
 docker run -d \
   --name go-rss-ui-app \
   -p 8082:8082 \
-  -e RSS_DB_HOST=postgres \
-  -e RSS_DB_USER=postgres \
-  -e RSS_DB_PASSWORD=postgres \
-  -e RSS_DB_NAME=go_rss_ui_2 \
-  -e RSS_DB_PORT=5432 \
-  -e RSS_SESSION_SECRET=replace-with-a-long-random-secret-at-least-32-characters \
+  -e GO_RSS_UI_DB_HOST=postgres \
+  -e GO_RSS_UI_DB_USER=postgres \
+  -e GO_RSS_UI_DB_PASSWORD=postgres \
+  -e GO_RSS_UI_DB_NAME=go_rss_ui \
+  -e GO_RSS_UI_DB_PORT=5432 \
+  -e GO_RSS_UI_SESSION_SECRET=replace-with-a-long-random-secret-at-least-32-characters \
   go-rss-ui:latest
 ```
 
-For Docker Compose, pass `RSS_SESSION_SECRET` from the environment or an untracked local `.env` file instead of committing a real production secret into the repository.
+For Docker Compose, pass `GO_RSS_UI_SESSION_SECRET` from the environment or an untracked local `.env` file instead of committing a real production secret into the repository.
 
 On Ubuntu, you can generate and provide the secret in either of these ways:
 
 ```bash
 # Option 1: current shell session only
-export RSS_SESSION_SECRET="$(openssl rand -base64 48)"
+export GO_RSS_UI_SESSION_SECRET="$(openssl rand -base64 48)"
 docker compose up -d
 ```
 
 ```bash
 # Option 2: local .env file next to docker-compose.yml
-printf 'RSS_SESSION_SECRET=%s\n' "$(openssl rand -base64 48)" >> .env
+printf 'GO_RSS_UI_SESSION_SECRET=%s\n' "$(openssl rand -base64 48)" >> .env
 docker compose up -d
 ```
 
@@ -185,37 +185,37 @@ If you use the `.env` file approach, keep that file out of version control and s
 
 ## Configuration
 
-The application uses environment variables for configuration. All variables use the `RSS_` prefix. Create a `.env` file or set the following variables:
+The application uses environment variables for configuration. All variables use the `GO_RSS_UI_` prefix. Create a `.env` file or set the following variables:
 
 ### Database Configuration
-- `RSS_DATABASE_URL` - Complete PostgreSQL connection string (takes precedence over individual variables)
-- `RSS_DB_HOST` - PostgreSQL database host (default: localhost)
-- `RSS_DB_USER` - PostgreSQL database user (default: postgres)
-- `RSS_DB_PASSWORD` - PostgreSQL database password (default: postgres)
-- `RSS_DB_NAME` - PostgreSQL database name (default: go_rss_ui_2)
-- `RSS_DB_PORT` - PostgreSQL database port (default: 5432)
-- `RSS_DB_SSLMODE` - PostgreSQL SSL mode (default: disable)
-- `RSS_DB_TIMEZONE` - PostgreSQL timezone (default: Asia/Shanghai)
+- `GO_RSS_UI_DATABASE_URL` - Complete PostgreSQL connection string (takes precedence over individual variables)
+- `GO_RSS_UI_DB_HOST` - PostgreSQL database host (default: localhost)
+- `GO_RSS_UI_DB_USER` - PostgreSQL database user (default: postgres)
+- `GO_RSS_UI_DB_PASSWORD` - PostgreSQL database password (default: postgres)
+- `GO_RSS_UI_DB_NAME` - PostgreSQL database name (default: go_rss_ui)
+- `GO_RSS_UI_DB_PORT` - PostgreSQL database port (default: 5432)
+- `GO_RSS_UI_DB_SSLMODE` - PostgreSQL SSL mode (default: disable)
+- `GO_RSS_UI_DB_TIMEZONE` - PostgreSQL timezone (default: Asia/Shanghai)
 
 ### Redis Configuration
-- `RSS_REDIS_HOST` - Redis host (default: localhost)
-- `RSS_REDIS_PORT` - Redis port (default: 6379)
-- `RSS_REDIS_PASSWORD` - Redis password (default: empty)
+- `GO_RSS_UI_REDIS_HOST` - Redis host (default: localhost)
+- `GO_RSS_UI_REDIS_PORT` - Redis port (default: 6379)
+- `GO_RSS_UI_REDIS_PASSWORD` - Redis password (default: empty)
 
 ### Server Configuration
-- `RSS_PORT` - Server port (default: 8082)
-- `RSS_ENV` - Environment name; set to `production` in production deployments
+- `GO_RSS_UI_PORT` - Server port (default: 8082)
+- `GO_RSS_UI_ENV` - Environment name; set to `production` in production deployments
 
 ### Session Configuration
-- `RSS_SESSION_SECRET` - Session signing secret; required in production and should be at least 32 characters long
-- `RSS_SESSION_SECURE` - Explicit override for the session cookie `Secure` flag; when omitted, secure cookies are enabled automatically in production
+- `GO_RSS_UI_SESSION_SECRET` - Session signing secret; required in production and should be at least 32 characters long
+- `GO_RSS_UI_SESSION_SECURE` - Explicit override for the session cookie `Secure` flag; when omitted, secure cookies are enabled automatically in production
 
 ### Background Feed Fetching
-- `RSS_BACKGROUND_FETCH_ENABLED` - Enable/disable background feed fetching (default: true)
-- `RSS_BACKGROUND_FETCH_INTERVAL` - Interval in seconds for background fetching (default: 60)
+- `GO_RSS_UI_BACKGROUND_FETCH_ENABLED` - Enable/disable background feed fetching (default: true)
+- `GO_RSS_UI_BACKGROUND_FETCH_INTERVAL` - Interval in seconds for background fetching (default: 60)
 
 ### Testing
-- `RSS_CYPRESS` - Enable Cypress mode for testing tools (default: false)
+- `GO_RSS_UI_CYPRESS` - Enable Cypress mode for testing tools (default: false)
 
 ## Default Credentials
 
@@ -277,7 +277,7 @@ The application supports several CLI commands:
 - `GET /logs` - View feed fetch logs (in-memory, max 1000 entries)
 
 #### Tools (Cypress Mode Only)
-- `GET /tools` - Tools page (only when `RSS_CYPRESS=true`)
+- `GET /tools` - Tools page (only when `GO_RSS_UI_CYPRESS=true`)
 - `POST /tools/clear-all-tables` - Clear all database tables
 - `POST /tools/clear-table` - Clear a specific table (requires `name` parameter: users, feeds, or items)
 - `POST /tools/seed-users` - Seed users
@@ -330,10 +330,10 @@ The application supports several CLI commands:
 2. Start the web server for Cypress tests with the required environment variables:
    ```bash
    # Using air (for hot reload during development)
-   RSS_PORT=8083 RSS_DB_NAME=go_rss_ui_test RSS_CYPRESS=1 air
+   GO_RSS_UI_PORT=8083 GO_RSS_UI_DB_NAME=go_rss_ui_test GO_RSS_UI_CYPRESS=1 air
 
    # Or using go run
-   RSS_PORT=8083 RSS_DB_NAME=go_rss_ui_test RSS_CYPRESS=1 go run . server
+   GO_RSS_UI_PORT=8083 GO_RSS_UI_DB_NAME=go_rss_ui_test GO_RSS_UI_CYPRESS=1 go run . server
    ```
 
    The server will start on `http://localhost:8083` (as configured in `cypress.config.js`).
@@ -361,7 +361,7 @@ The Cypress tests cover:
 
 ## Example `.env`
 
-See [`.env.example`](/home/foobar/r/sandbox/go-rss-ui-2/.env.example) for the current variable names and defaults. The application expects `RSS_*` variables such as `RSS_DB_HOST`, `RSS_DATABASE_URL`, `RSS_CYPRESS`, and `RSS_PORT`.
+See [`.env.example`](/home/foobar/r/sandbox/go-rss-ui/.env.example) for the current variable names and defaults. The application expects `GO_RSS_UI_*` variables such as `GO_RSS_UI_DB_HOST`, `GO_RSS_UI_DATABASE_URL`, `GO_RSS_UI_CYPRESS`, and `GO_RSS_UI_PORT`.
 
 ## Project Structure
 

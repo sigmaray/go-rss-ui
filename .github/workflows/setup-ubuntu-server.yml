@@ -7,7 +7,7 @@ on:
 env:
   APP_DIR: /tmp/go-rss-ui-ci
   APP_PORT: '8082'
-  RSS_SESSION_SECRET: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+  GO_RSS_UI_SESSION_SECRET: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 
 jobs:
   shellcheck:
@@ -56,7 +56,7 @@ jobs:
 
       - name: Setup server and deploy (--skip-clone)
         run: |
-          sudo RSS_SESSION_SECRET="$RSS_SESSION_SECRET" \
+          sudo GO_RSS_UI_SESSION_SECRET="$GO_RSS_UI_SESSION_SECRET" \
             APP_PORT="$APP_PORT" \
             bash scripts/setup-ubuntu-server.sh \
               --no-ufw \

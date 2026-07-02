@@ -1,87 +1,37 @@
-version: '3.8'
+# Production compose for a VPS with shared infra (postgres + redis).
+# Infra: /home/foobar/r/sandbox/infra/postgres and .../infra/redis on network "infra".
+# Set GO_RSS_UI_DB_* and GO_RSS_UI_REDIS_* in .env (hosts: postgresql, redis).
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: go-rss-ui-postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: go_rss_ui_2
-      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
-    # ports:
-    #   - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - go-rss-network
-
-  redis:
-    image: redis:7-alpine
-    container_name: go-rss-ui-redis
-    # ports:
-    #   - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - go-rss-network
-    restart: unless-stopped
-
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: go-rss-ui-app
     environment:
-      RSS_DB_HOST: postgres
-      RSS_DB_USER: postgres
-      RSS_DB_PASSWORD: postgres
-      RSS_DB_NAME: go_rss_ui_2
-      RSS_DB_PORT: "5432"
-      RSS_DB_SSLMODE: disable
-      RSS_DB_TIMEZONE: UTC
-      RSS_REDIS_HOST: redis
-      RSS_REDIS_PORT: "6379"
-      RSS_REDIS_PASSWORD: ""
-      RSS_BACKGROUND_FETCH_ENABLED: "true"
-      RSS_BACKGROUND_FETCH_INTERVAL: "60"
-      RSS_SESSION_SECRET: ${RSS_SESSION_SECRET:?RSS_SESSION_SECRET is required}
-      # RSS_CYPRESS: "true"
-      RSS_PORT: ${RSS_PORT:-8082}
+      GO_RSS_UI_DB_HOST: ${GO_RSS_UI_DB_HOST:-postgresql}
+      GO_RSS_UI_DB_USER: ${GO_RSS_UI_DB_USER:-postgres}
+      GO_RSS_UI_DB_PASSWORD: ${GO_RSS_UI_DB_PASSWORD:?GO_RSS_UI_DB_PASSWORD is required}
+      GO_RSS_UI_DB_NAME: ${GO_RSS_UI_DB_NAME:-go_rss_ui}
+      GO_RSS_UI_DB_PORT: ${GO_RSS_UI_DB_PORT:-5432}
+      GO_RSS_UI_DB_SSLMODE: ${GO_RSS_UI_DB_SSLMODE:-disable}
+      GO_RSS_UI_DB_TIMEZONE: ${GO_RSS_UI_DB_TIMEZONE:-UTC}
+      GO_RSS_UI_REDIS_HOST: ${GO_RSS_UI_REDIS_HOST:-redis}
+      GO_RSS_UI_REDIS_PORT: ${GO_RSS_UI_REDIS_PORT:-6379}
+      GO_RSS_UI_REDIS_PASSWORD: ${GO_RSS_UI_REDIS_PASSWORD:?GO_RSS_UI_REDIS_PASSWORD is required}
+      GO_RSS_UI_BACKGROUND_FETCH_ENABLED: ${GO_RSS_UI_BACKGROUND_FETCH_ENABLED:-true}
+      GO_RSS_UI_BACKGROUND_FETCH_INTERVAL: ${GO_RSS_UI_BACKGROUND_FETCH_INTERVAL:-60}
+      GO_RSS_UI_SESSION_SECRET: ${GO_RSS_UI_SESSION_SECRET:?GO_RSS_UI_SESSION_SECRET is required}
+      GO_RSS_UI_PORT: ${GO_RSS_UI_PORT:-8082}
+      GO_RSS_UI_ENV: ${GO_RSS_UI_ENV:-production}
       GIN_MODE: release
     ports:
-      - "${RSS_PORT:-8082}:${RSS_PORT:-8082}"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - "${GO_RSS_UI_PORT:-8082}:${GO_RSS_UI_PORT:-8082}"
     networks:
-      - go-rss-network
+      - infra
     restart: unless-stopped
-    # volumes:
-    #   # Optional: mount templates and static for development
-    #   # Uncomment for development hot-reload
-    #   - ./templates:/app/templates:ro
-    #   - ./static:/app/static:ro
-
-volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
 
 networks:
-  go-rss-network:
-    driver: bridge
-
+  infra:
+    external: true
+    name: infra

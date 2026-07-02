@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# setup-ubuntu-server.sh — prepare a fresh Ubuntu server for deploying go-rss-ui-2.
+# setup-ubuntu-server.sh — prepare a fresh Ubuntu server for deploying go-rss-ui.
 #
 # Run on the server (requires root):
 #   sudo bash scripts/setup-ubuntu-server.sh
 #
 # Full install (setup + git clone + docker compose up):
-#   sudo GIT_REPO=https://github.com/you/go-rss-ui-2.git \
-#        RSS_SESSION_SECRET="$(openssl rand -hex 64)" \
+#   sudo GIT_REPO=https://github.com/you/go-rss-ui.git \
+#        GO_RSS_UI_SESSION_SECRET="$(openssl rand -hex 64)" \
 #        bash scripts/setup-ubuntu-server.sh --deploy
 #
 set -euo pipefail
@@ -25,7 +25,7 @@ DO_DEPLOY=false
 SKIP_CLONE=false
 DOCKER_USER=""
 GIT_REPO="${GIT_REPO:-}"
-RSS_SESSION_SECRET="${RSS_SESSION_SECRET:-}"
+GO_RSS_UI_SESSION_SECRET="${GO_RSS_UI_SESSION_SECRET:-}"
 
 log() {
   printf '[%s] %s\n' "$SCRIPT_NAME" "$*"
@@ -38,7 +38,7 @@ die() {
 
 usage() {
   cat <<'EOF'
-Prepare an Ubuntu server for deploying go-rss-ui-2 (Docker Compose).
+Prepare an Ubuntu server for deploying go-rss-ui (Docker Compose).
 
 Usage:
   sudo bash scripts/setup-ubuntu-server.sh [options]
@@ -53,7 +53,7 @@ Options:
 
 Environment variables (for --deploy):
   GIT_REPO                  Git repository URL (required unless --skip-clone)
-  RSS_SESSION_SECRET        Session secret, 64+ bytes hex/base64 (required)
+  GO_RSS_UI_SESSION_SECRET        Session secret, 64+ bytes hex/base64 (required)
   GIT_VERSION               Branch or tag (default: main)
   APP_PORT                  Application port (default: 8082)
 
@@ -62,8 +62,8 @@ Examples:
   sudo bash scripts/setup-ubuntu-server.sh
 
   # Setup + first deploy
-  sudo GIT_REPO=https://github.com/you/go-rss-ui-2.git \
-       RSS_SESSION_SECRET="$(openssl rand -hex 64)" \
+  sudo GIT_REPO=https://github.com/you/go-rss-ui.git \
+       GO_RSS_UI_SESSION_SECRET="$(openssl rand -hex 64)" \
        bash scripts/setup-ubuntu-server.sh --deploy
 EOF
 }
@@ -209,9 +209,9 @@ write_env_file() {
   local env_file="${APP_DIR}/.env"
   log "writing ${env_file}"
   cat > "$env_file" <<EOF
-RSS_SESSION_SECRET=${RSS_SESSION_SECRET}
-RSS_ENV=production
-RSS_PORT=${APP_PORT}
+GO_RSS_UI_SESSION_SECRET=${GO_RSS_UI_SESSION_SECRET}
+GO_RSS_UI_ENV=production
+GO_RSS_UI_PORT=${APP_PORT}
 EOF
   chmod 0600 "$env_file"
 }
@@ -220,8 +220,8 @@ validate_deploy_vars() {
   if [[ "$SKIP_CLONE" != true ]]; then
     [[ -n "$GIT_REPO" ]] || die "for --deploy set GIT_REPO (or use --skip-clone)"
   fi
-  [[ -n "$RSS_SESSION_SECRET" ]] || die "for --deploy set RSS_SESSION_SECRET (openssl rand -hex 64)"
-  [[ ${#RSS_SESSION_SECRET} -ge 32 ]] || die "RSS_SESSION_SECRET is too short (need 64+ bytes hex)"
+  [[ -n "$GO_RSS_UI_SESSION_SECRET" ]] || die "for --deploy set GO_RSS_UI_SESSION_SECRET (openssl rand -hex 64)"
+  [[ ${#GO_RSS_UI_SESSION_SECRET} -ge 32 ]] || die "GO_RSS_UI_SESSION_SECRET is too short (need 64+ bytes hex)"
 }
 
 clone_or_update_repo() {
@@ -251,7 +251,7 @@ deploy_application() {
 
   log "building and starting docker compose"
   cd "$APP_DIR"
-  export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-go-rss-ui-2}"
+  export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-go-rss-ui}"
   docker compose build --pull
   docker compose up -d --remove-orphans
 
@@ -289,7 +289,7 @@ Next step — deploy the application:
   2. Create ${APP_DIR}/.env (see .env.example)
   3. docker compose -f ${APP_DIR}/docker-compose.yml up -d --build
 
-Or rerun with --deploy and GIT_REPO, RSS_SESSION_SECRET.
+Or rerun with --deploy and GIT_REPO, GO_RSS_UI_SESSION_SECRET.
 
 EOF
   fi

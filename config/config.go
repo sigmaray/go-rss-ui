@@ -23,19 +23,19 @@ func Load() {
 
 // GetDSN constructs a PostgreSQL DSN string from environment variables
 func GetDSN() string {
-	// First, check if RSS_DATABASE_URL is set (takes precedence)
-	if dsn := os.Getenv("RSS_DATABASE_URL"); dsn != "" {
+	// First, check if GO_RSS_UI_DATABASE_URL is set (takes precedence)
+	if dsn := os.Getenv("GO_RSS_UI_DATABASE_URL"); dsn != "" {
 		return dsn
 	}
 
 	// Otherwise, construct DSN from individual parameters
-	host := GetEnvOrDefault("RSS_DB_HOST", "localhost")
-	user := GetEnvOrDefault("RSS_DB_USER", "postgres")
-	password := GetEnvOrDefault("RSS_DB_PASSWORD", "postgres")
-	dbname := GetEnvOrDefault("RSS_DB_NAME", "go_rss_ui_2")
-	port := GetEnvOrDefault("RSS_DB_PORT", "5432")
-	sslmode := GetEnvOrDefault("RSS_DB_SSLMODE", "disable")
-	timezone := GetEnvOrDefault("RSS_DB_TIMEZONE", "Asia/Shanghai")
+	host := GetEnvOrDefault("GO_RSS_UI_DB_HOST", "localhost")
+	user := GetEnvOrDefault("GO_RSS_UI_DB_USER", "postgres")
+	password := GetEnvOrDefault("GO_RSS_UI_DB_PASSWORD", "postgres")
+	dbname := GetEnvOrDefault("GO_RSS_UI_DB_NAME", "go_rss_ui")
+	port := GetEnvOrDefault("GO_RSS_UI_DB_PORT", "5432")
+	sslmode := GetEnvOrDefault("GO_RSS_UI_DB_SSLMODE", "disable")
+	timezone := GetEnvOrDefault("GO_RSS_UI_DB_TIMEZONE", "Asia/Shanghai")
 
 	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s",
 		host, user, password, dbname, port, sslmode, timezone)
@@ -43,11 +43,11 @@ func GetDSN() string {
 
 // GetDBConfig returns individual database configuration parameters
 func GetDBConfig() (host, user, password, dbname, port string) {
-	host = GetEnvOrDefault("RSS_DB_HOST", "localhost")
-	user = GetEnvOrDefault("RSS_DB_USER", "postgres")
-	password = GetEnvOrDefault("RSS_DB_PASSWORD", "postgres")
-	dbname = GetEnvOrDefault("RSS_DB_NAME", "go_rss_ui_2")
-	port = GetEnvOrDefault("RSS_DB_PORT", "5432")
+	host = GetEnvOrDefault("GO_RSS_UI_DB_HOST", "localhost")
+	user = GetEnvOrDefault("GO_RSS_UI_DB_USER", "postgres")
+	password = GetEnvOrDefault("GO_RSS_UI_DB_PASSWORD", "postgres")
+	dbname = GetEnvOrDefault("GO_RSS_UI_DB_NAME", "go_rss_ui")
+	port = GetEnvOrDefault("GO_RSS_UI_DB_PORT", "5432")
 	return
 }
 
@@ -73,46 +73,46 @@ func getBoolEnv(key string, defaultValue bool) bool {
 // GetBackgroundFetchEnabled returns whether background feed fetching is enabled
 // Returns true by default if the variable is not set or empty
 func GetBackgroundFetchEnabled() bool {
-	return getBoolEnv("RSS_BACKGROUND_FETCH_ENABLED", true)
+	return getBoolEnv("GO_RSS_UI_BACKGROUND_FETCH_ENABLED", true)
 }
 
 // GetBackgroundFetchInterval returns the background fetch interval in seconds
 // Returns 60 by default if the variable is not set or invalid
 func GetBackgroundFetchInterval() int {
-	value := os.Getenv("RSS_BACKGROUND_FETCH_INTERVAL")
+	value := os.Getenv("GO_RSS_UI_BACKGROUND_FETCH_INTERVAL")
 	if value == "" {
 		return 60
 	}
 	interval, err := strconv.Atoi(strings.TrimSpace(value))
 	if err != nil || interval <= 0 {
-		log.Printf("Warning: Invalid RSS_BACKGROUND_FETCH_INTERVAL value '%s', using default 60 seconds", value)
+		log.Printf("Warning: Invalid GO_RSS_UI_BACKGROUND_FETCH_INTERVAL value '%s', using default 60 seconds", value)
 		return 60
 	}
 	return interval
 }
 
 // IsCypressMode returns whether the application is running in Cypress mode
-// Returns true if RSS_CYPRESS environment variable is set to "true"
+// Returns true if GO_RSS_UI_CYPRESS environment variable is set to "true"
 func IsCypressMode() bool {
-	return getBoolEnv("RSS_CYPRESS", false)
+	return getBoolEnv("GO_RSS_UI_CYPRESS", false)
 }
 
 // GetRedisHost returns Redis host from environment variable
 // Returns "localhost" by default
 func GetRedisHost() string {
-	return GetEnvOrDefault("RSS_REDIS_HOST", "localhost")
+	return GetEnvOrDefault("GO_RSS_UI_REDIS_HOST", "localhost")
 }
 
 // GetRedisPort returns Redis port from environment variable
 // Returns "6379" by default
 func GetRedisPort() string {
-	return GetEnvOrDefault("RSS_REDIS_PORT", "6379")
+	return GetEnvOrDefault("GO_RSS_UI_REDIS_PORT", "6379")
 }
 
 // GetRedisPassword returns Redis password from environment variable
 // Returns empty string by default
 func GetRedisPassword() string {
-	return os.Getenv("RSS_REDIS_PASSWORD")
+	return os.Getenv("GO_RSS_UI_REDIS_PASSWORD")
 }
 
 // GetRedisAddr returns Redis address in format "host:port"
@@ -123,14 +123,14 @@ func GetRedisAddr() string {
 // GetServerPort returns the server port from environment variable
 // Returns 8082 by default if the variable is not set or invalid
 func GetServerPort() string {
-	value := os.Getenv("RSS_PORT")
+	value := os.Getenv("GO_RSS_UI_PORT")
 	if value == "" {
 		return "8082"
 	}
 	// Validate that it's a valid port number
 	port, err := strconv.Atoi(strings.TrimSpace(value))
 	if err != nil || port <= 0 || port > 65535 {
-		log.Printf("Warning: Invalid RSS_PORT value '%s', using default 8082", value)
+		log.Printf("Warning: Invalid GO_RSS_UI_PORT value '%s', using default 8082", value)
 		return "8082"
 	}
 	return value
@@ -138,24 +138,24 @@ func GetServerPort() string {
 
 // IsProduction returns true when the app is running in production mode.
 func IsProduction() bool {
-	return strings.EqualFold(strings.TrimSpace(os.Getenv("RSS_ENV")), "production") ||
+	return strings.EqualFold(strings.TrimSpace(os.Getenv("GO_RSS_UI_ENV")), "production") ||
 		strings.EqualFold(strings.TrimSpace(os.Getenv("GIN_MODE")), "release")
 }
 
 // GetSessionSecret returns the configured session secret.
-// In production, RSS_SESSION_SECRET must be set and should be at least 32 characters long.
+// In production, GO_RSS_UI_SESSION_SECRET must be set and should be at least 32 characters long.
 // In non-production, a random ephemeral secret is generated when the variable is missing.
 func GetSessionSecret() string {
-	secret := strings.TrimSpace(os.Getenv("RSS_SESSION_SECRET"))
+	secret := strings.TrimSpace(os.Getenv("GO_RSS_UI_SESSION_SECRET"))
 	if secret != "" {
 		if len(secret) < 32 {
-			log.Printf("Warning: RSS_SESSION_SECRET is shorter than 32 characters")
+			log.Printf("Warning: GO_RSS_UI_SESSION_SECRET is shorter than 32 characters")
 		}
 		return secret
 	}
 
 	if IsProduction() {
-		log.Fatal("RSS_SESSION_SECRET must be set in production and should be at least 32 characters long")
+		log.Fatal("GO_RSS_UI_SESSION_SECRET must be set in production and should be at least 32 characters long")
 	}
 
 	generatedSecret := make([]byte, 32)
@@ -163,15 +163,15 @@ func GetSessionSecret() string {
 		log.Fatal("failed to generate development session secret: ", err)
 	}
 
-	log.Printf("Warning: RSS_SESSION_SECRET is not set; using an ephemeral development secret")
+	log.Printf("Warning: GO_RSS_UI_SESSION_SECRET is not set; using an ephemeral development secret")
 	return base64.StdEncoding.EncodeToString(generatedSecret)
 }
 
 // GetSessionSecure returns whether secure cookies should be used.
 // Secure cookies are enabled automatically in production and can be overridden explicitly.
 func GetSessionSecure() bool {
-	if os.Getenv("RSS_SESSION_SECURE") != "" {
-		return getBoolEnv("RSS_SESSION_SECURE", false)
+	if os.Getenv("GO_RSS_UI_SESSION_SECURE") != "" {
+		return getBoolEnv("GO_RSS_UI_SESSION_SECURE", false)
 	}
 
 	return IsProduction()
