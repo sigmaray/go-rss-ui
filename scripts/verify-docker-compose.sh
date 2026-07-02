@@ -4,6 +4,7 @@
 #
 # Usage:
 #   bash scripts/verify-docker-compose.sh
+#   bash scripts/verify-docker-compose.sh docker-compose.yml docker-compose.with-infra.yml
 #
 set -euo pipefail
 
@@ -175,32 +176,44 @@ validate_only_compose_file() {
   log "validated config only (no smoke test): ${compose_file}"
 }
 
+run_compose_checks() {
+  local compose_file="$1"
+
+  case "$compose_file" in
+    docker-compose.with-infra.yml)
+      smoke_test_compose_file "$compose_file" "go-rss-ui-with-infra-ci" false false
+      ;;
+    docker-compose.yml)
+      smoke_test_compose_file "$compose_file" "go-rss-ui-prod-ci" true true
+      ;;
+    *)
+      validate_only_compose_file "$compose_file"
+      ;;
+  esac
+}
+
 main() {
   require_docker
   require_session_secret
 
   local compose_files=()
   local compose_file
-  while IFS= read -r compose_file; do
-    compose_files+=("$compose_file")
-  done < <(discover_compose_files)
 
-  ((${#compose_files[@]} > 0)) || die "no docker-compose*.yml files found in ${REPO_ROOT}"
+  if (($# > 0)); then
+    compose_files=("$@")
+  else
+    while IFS= read -r compose_file; do
+      compose_files+=("$compose_file")
+    done < <(discover_compose_files)
+  fi
+
+  ((${#compose_files[@]} > 0)) || die "no docker compose files to verify"
 
   cd "$REPO_ROOT"
 
   for compose_file in "${compose_files[@]}"; do
-    case "$compose_file" in
-      docker-compose.with-infra.yml)
-        smoke_test_compose_file "$compose_file" "go-rss-ui-with-infra-ci" false false
-        ;;
-      docker-compose.yml)
-        smoke_test_compose_file "$compose_file" "go-rss-ui-prod-ci" true true
-        ;;
-      *)
-        validate_only_compose_file "$compose_file"
-        ;;
-    esac
+    [[ -f "$compose_file" ]] || die "compose file not found: ${compose_file}"
+    run_compose_checks "$compose_file"
   done
 
   log "all docker compose files verified"

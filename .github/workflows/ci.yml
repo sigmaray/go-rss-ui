@@ -136,6 +136,12 @@ jobs:
     name: Verify Docker Compose
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        compose_file:
+          - docker-compose.yml
+          - docker-compose.with-infra.yml
     env:
       GO_RSS_UI_SESSION_SECRET: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
       GO_RSS_UI_DB_PASSWORD: postgres
@@ -146,8 +152,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Verify all docker compose files
-        run: bash scripts/verify-docker-compose.sh
+      - name: Verify ${{ matrix.compose_file }}
+        run: bash scripts/verify-docker-compose.sh "${{ matrix.compose_file }}"
 
   test:
     name: Run Cypress Tests
