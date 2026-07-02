@@ -7,6 +7,7 @@ on:
 env:
   APP_DIR: /tmp/go-rss-ui-ci
   APP_PORT: '8082'
+  COMPOSE_FILE: docker-compose.with-infra.yml
   GO_RSS_UI_SESSION_SECRET: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 
 jobs:
@@ -58,10 +59,12 @@ jobs:
         run: |
           sudo GO_RSS_UI_SESSION_SECRET="$GO_RSS_UI_SESSION_SECRET" \
             APP_PORT="$APP_PORT" \
+            COMPOSE_FILE="$COMPOSE_FILE" \
             bash scripts/setup-ubuntu-server.sh \
               --no-ufw \
               --app-dir "$APP_DIR" \
               --docker-user "$USER" \
+              --compose-file "$COMPOSE_FILE" \
               --deploy \
               --skip-clone
 
@@ -72,4 +75,4 @@ jobs:
           test -f "$APP_DIR/.env"
           test "$(stat -c '%a' "$APP_DIR/.env")" = "600"
           curl -fsS "http://127.0.0.1:${APP_PORT}/" | head -c 200
-          sudo docker compose -f "$APP_DIR/docker-compose.yml" ps
+          sudo docker compose -f "$APP_DIR/$COMPOSE_FILE" ps

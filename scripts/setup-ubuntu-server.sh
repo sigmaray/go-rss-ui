@@ -19,6 +19,7 @@ readonly DEFAULT_APP_PORT="8082"
 APP_DIR="${APP_DIR:-$DEFAULT_APP_DIR}"
 APP_PORT="${APP_PORT:-$DEFAULT_APP_PORT}"
 GIT_VERSION="${GIT_VERSION:-main}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 
 WITH_UFW=true
 DO_DEPLOY=false
@@ -26,6 +27,8 @@ SKIP_CLONE=false
 DOCKER_USER=""
 GIT_REPO="${GIT_REPO:-}"
 GO_RSS_UI_SESSION_SECRET="${GO_RSS_UI_SESSION_SECRET:-}"
+GO_RSS_UI_DB_PASSWORD="${GO_RSS_UI_DB_PASSWORD:-}"
+GO_RSS_UI_REDIS_PASSWORD="${GO_RSS_UI_REDIS_PASSWORD:-}"
 
 log() {
   printf '[%s] %s\n' "$SCRIPT_NAME" "$*"
@@ -49,13 +52,18 @@ Options:
   --docker-user USER        Add user to the docker group
   --deploy                  Clone repository and start docker compose
   --skip-clone              Do not clone repository (code already in --app-dir; for CI)
+  --compose-file FILE       Compose file (default: docker-compose.yml)
   -h, --help                Show this help
 
 Environment variables (for --deploy):
   GIT_REPO                  Git repository URL (required unless --skip-clone)
-  GO_RSS_UI_SESSION_SECRET        Session secret, 64+ bytes hex/base64 (required)
+  GO_RSS_UI_SESSION_SECRET  Session secret, 64+ bytes hex/base64 (required)
+  GO_RSS_UI_DB_PASSWORD     PostgreSQL password (required for docker-compose.yml)
+  GO_RSS_UI_REDIS_PASSWORD  Redis password (required for docker-compose.yml)
   GIT_VERSION               Branch or tag (default: main)
   APP_PORT                  Application port (default: 8082)
+  COMPOSE_FILE              Compose file (default: docker-compose.yml;
+                            use docker-compose.with-infra.yml for bundled Postgres/Redis)
 
 Examples:
   # Server setup only (Docker, UFW)
@@ -92,6 +100,11 @@ parse_args() {
       --skip-clone)
         SKIP_CLONE=true
         shift
+        ;;
+      --compose-file)
+        [[ $# -ge 2 ]] || die "option --compose-file requires an argument"
+        COMPOSE_FILE="$2"
+        shift 2
         ;;
       -h|--help)
         usage
@@ -205,6 +218,10 @@ prepare_app_directory() {
   chmod 0755 "${APP_DIR}"
 }
 
+uses_bundled_infra_compose() {
+  [[ "$COMPOSE_FILE" == *"with-infra"* ]]
+}
+
 write_env_file() {
   local env_file="${APP_DIR}/.env"
   log "writing ${env_file}"
@@ -213,6 +230,12 @@ GO_RSS_UI_SESSION_SECRET=${GO_RSS_UI_SESSION_SECRET}
 GO_RSS_UI_ENV=production
 GO_RSS_UI_PORT=${APP_PORT}
 EOF
+  if ! uses_bundled_infra_compose; then
+    cat >> "$env_file" <<EOF
+GO_RSS_UI_DB_PASSWORD=${GO_RSS_UI_DB_PASSWORD}
+GO_RSS_UI_REDIS_PASSWORD=${GO_RSS_UI_REDIS_PASSWORD}
+EOF
+  fi
   chmod 0600 "$env_file"
 }
 
@@ -222,6 +245,10 @@ validate_deploy_vars() {
   fi
   [[ -n "$GO_RSS_UI_SESSION_SECRET" ]] || die "for --deploy set GO_RSS_UI_SESSION_SECRET (openssl rand -hex 64)"
   [[ ${#GO_RSS_UI_SESSION_SECRET} -ge 32 ]] || die "GO_RSS_UI_SESSION_SECRET is too short (need 64+ bytes hex)"
+  if ! uses_bundled_infra_compose; then
+    [[ -n "$GO_RSS_UI_DB_PASSWORD" ]] || die "for --deploy set GO_RSS_UI_DB_PASSWORD (or use COMPOSE_FILE=docker-compose.with-infra.yml)"
+    [[ -n "$GO_RSS_UI_REDIS_PASSWORD" ]] || die "for --deploy set GO_RSS_UI_REDIS_PASSWORD (or use COMPOSE_FILE=docker-compose.with-infra.yml)"
+  fi
 }
 
 clone_or_update_repo() {
@@ -242,22 +269,22 @@ deploy_application() {
   validate_deploy_vars
   prepare_app_directory
   if [[ "$SKIP_CLONE" == true ]]; then
-    [[ -f "${APP_DIR}/docker-compose.yml" ]] || die "docker-compose.yml not found in ${APP_DIR} (--skip-clone)"
+    [[ -f "${APP_DIR}/${COMPOSE_FILE}" ]] || die "${COMPOSE_FILE} not found in ${APP_DIR} (--skip-clone)"
     log "using code in ${APP_DIR} (--skip-clone)"
   else
     clone_or_update_repo
   fi
   write_env_file
 
-  log "building and starting docker compose"
+  log "building and starting docker compose (${COMPOSE_FILE})"
   cd "$APP_DIR"
   export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-go-rss-ui}"
-  docker compose build --pull
-  docker compose up -d --remove-orphans
+  docker compose -f "$COMPOSE_FILE" build --pull
+  docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
 
   log "waiting for containers to be ready"
   for _ in $(seq 1 30); do
-    if docker compose ps --status running 2>/dev/null | grep -q "go-rss-ui-app"; then
+    if docker compose -f "$COMPOSE_FILE" ps --status running 2>/dev/null | grep -q "go-rss-ui-app"; then
       if curl -fsS "http://127.0.0.1:${APP_PORT}/" >/dev/null 2>&1; then
         log "application is responding on port ${APP_PORT}"
         return 0
@@ -266,7 +293,7 @@ deploy_application() {
     sleep 2
   done
 
-  log "warning: application is not responding yet; check: docker compose -f ${APP_DIR}/docker-compose.yml ps"
+  log "warning: application is not responding yet; check: docker compose -f ${APP_DIR}/${COMPOSE_FILE} ps"
 }
 
 print_next_steps() {
@@ -277,7 +304,7 @@ print_next_steps() {
 Application directory: ${APP_DIR}
 
 Verification:
-  docker compose -f ${APP_DIR}/docker-compose.yml ps
+  docker compose -f ${APP_DIR}/${COMPOSE_FILE} ps
   curl -I http://127.0.0.1:${APP_PORT}/
 
 EOF
@@ -287,7 +314,7 @@ EOF
 Next step — deploy the application:
   1. Clone the repository into ${APP_DIR}
   2. Create ${APP_DIR}/.env (see .env.example)
-  3. docker compose -f ${APP_DIR}/docker-compose.yml up -d --build
+  3. docker compose -f ${APP_DIR}/${COMPOSE_FILE} up -d --build
 
 Or rerun with --deploy and GIT_REPO, GO_RSS_UI_SESSION_SECRET.
 
