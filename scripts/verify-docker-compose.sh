@@ -9,7 +9,8 @@
 set -euo pipefail
 
 readonly SCRIPT_NAME="${0##*/}"
-readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly REPO_ROOT
 
 GO_RSS_UI_SESSION_SECRET="${GO_RSS_UI_SESSION_SECRET:-}"
 GO_RSS_UI_DB_PASSWORD="${GO_RSS_UI_DB_PASSWORD:-postgres}"
