@@ -1,7 +1,7 @@
 describe('Home Page', () => {
-  it('should display the home page with correct title and admin link', () => {
+  it('should display the home page with correct title and no navbar when logged out', () => {
     cy.visit('/')
-    cy.contains('h1', 'My RSS App').should('be.visible')
-    cy.get('a[href="/login"]').should('be.visible').should('contain', 'Login')
+    cy.contains('h1', 'RSS Feeds').should('be.visible')
+    cy.get('nav.navbar').should('not.exist')
   })
 })

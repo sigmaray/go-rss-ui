@@ -29,7 +29,8 @@ describe('Full Application Flow', () => {
 
     // Should be back to home page
     cy.url().should('eq', Cypress.config('baseUrl') + '/')
-    cy.contains('h1', 'My RSS App').should('be.visible')
+    cy.contains('h1', 'RSS Feeds').should('be.visible')
+    cy.get('nav.navbar').should('not.exist')
   })
 
   it('should handle failed login and retry successfully', () => {

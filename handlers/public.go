@@ -81,7 +81,7 @@ func Home(c *gin.Context) {
 	}
 
 	data := gin.H{
-		"title":       "My RSS App",
+		"title":       "RSS Feeds",
 		"items":       itemsWithSanitized,
 		"recentFeeds": recentFeeds,
 		"feedID":      c.Query("feed_id"),
