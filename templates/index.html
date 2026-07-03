@@ -20,6 +20,15 @@
                         </small>
                     </div>
                     
+                    {{ if .Link }}
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <strong>Link:</strong>
+                            <a href="{{ .Link }}" target="_blank" class="text-break">{{ .Link }}</a>
+                        </small>
+                    </div>
+                    {{ end }}
+                    
                     <div class="mb-2">
                         <small class="text-muted">
                             {{ if .PublishedAt }}

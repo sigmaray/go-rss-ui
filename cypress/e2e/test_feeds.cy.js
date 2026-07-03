@@ -111,6 +111,12 @@ describe('Test Feeds Fetch', () => {
     cy.get('table').contains('th', 'Variable Name').should('be.visible')
     cy.get('table').contains('th', 'Value').should('be.visible')
     cy.get('table').contains('th', 'Description').should('be.visible')
+
+    // Verify item links are shown on the home page
+    cy.visit('/')
+    cy.contains('h1', 'RSS Feeds').should('be.visible')
+    cy.get('a[href="http://example.com/test1/item1"]').should('be.visible').should('contain', 'http://example.com/test1/item1')
+    cy.get('a[href="http://example.com/test2/itemA"]').should('be.visible').should('contain', 'http://example.com/test2/itemA')
   })
   
   it('should handle feed fetch errors (404 and 500) and display them in UI', () => {

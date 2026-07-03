@@ -61,7 +61,7 @@ npm test:headed
 | `cypress/e2e/feeds.cy.js` | Feed CRUD (create, edit, delete), validation, bulk delete |
 | `cypress/e2e/items.cy.js` | Items list/detail, empty state, bulk delete |
 | `cypress/e2e/user_management.cy.js` | User CRUD, validation, uniqueness |
-| `cypress/e2e/test_feeds.cy.js` | Fetching items from test feeds, fetch error handling |
+| `cypress/e2e/test_feeds.cy.js` | Fetching items from test feeds, item links on home page, fetch error handling |
 | `cypress/e2e/integration.cy.js` | Full login/logout journey, failed login retry |
 | `cypress/e2e/api.cy.js` | REST API (`/api/v1`): auth, users, feeds, items CRUD, fetch, Swagger |
 
