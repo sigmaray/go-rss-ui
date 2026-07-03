@@ -24,6 +24,7 @@ services:
       GO_RSS_UI_SESSION_SECRET: ${GO_RSS_UI_SESSION_SECRET:?GO_RSS_UI_SESSION_SECRET is required}
       GO_RSS_UI_PORT: ${GO_RSS_UI_PORT:-8082}
       GO_RSS_UI_ENV: ${GO_RSS_UI_ENV:-production}
+      GO_RSS_UI_SESSION_SECURE: ${GO_RSS_UI_SESSION_SECURE:-0}
       GIN_MODE: release
     ports:
       - "${GO_RSS_UI_PORT:-8082}:${GO_RSS_UI_PORT:-8082}"
