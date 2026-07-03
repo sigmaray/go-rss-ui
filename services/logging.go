@@ -9,9 +9,11 @@ import (
 )
 
 const (
-	fetchLogsRedisKey    = "app:fetch-logs"
-	itemsCreatedStatsKey = "app:items:created:stats"
-	maxLogSize           = 1000
+	fetchLogsRedisKey         = "app:fetch-logs"
+	itemsCreatedStatsKey      = "app:items:created:stats"
+	feedFetchSuccessStatsKey  = "app:feeds:fetch:success:stats"
+	feedFetchErrorStatsKey    = "app:feeds:fetch:error:stats"
+	maxLogSize                = 1000
 )
 
 // LogEntry represents a single log entry
@@ -126,4 +128,48 @@ func GetItemsCreatedStats() map[string]int64 {
 	}
 
 	return stats
+}
+
+// IncrementFeedFetchStats increments the counter for successful or failed feed fetches in the current hour
+func IncrementFeedFetchStats(success bool) {
+	if app.RedisClient == nil {
+		return
+	}
+
+	now := time.Now()
+	baseKey := feedFetchErrorStatsKey
+	if success {
+		baseKey = feedFetchSuccessStatsKey
+	}
+	hourKey := fmt.Sprintf("%s:%s", baseKey, now.Format("2006-01-02-15"))
+
+	app.RedisClient.Incr(app.RedisCtx, hourKey)
+	app.RedisClient.Expire(app.RedisCtx, hourKey, 48*time.Hour)
+}
+
+// GetFeedFetchStats returns successful and failed feed fetch counts for the last 24 hours.
+// Map keys use format "YYYY-MM-DD HH:00".
+func GetFeedFetchStats() (successStats, errorStats map[string]int64) {
+	successStats = make(map[string]int64)
+	errorStats = make(map[string]int64)
+
+	if app.RedisClient == nil {
+		return successStats, errorStats
+	}
+
+	now := time.Now()
+	for i := 0; i < 24; i++ {
+		hourTime := now.Add(-time.Duration(i) * time.Hour)
+		hourSuffix := hourTime.Format("2006-01-02-15")
+		displayKey := hourTime.Format("2006-01-02 15:00")
+
+		if count, err := app.RedisClient.Get(app.RedisCtx, fmt.Sprintf("%s:%s", feedFetchSuccessStatsKey, hourSuffix)).Int64(); err == nil {
+			successStats[displayKey] = count
+		}
+		if count, err := app.RedisClient.Get(app.RedisCtx, fmt.Sprintf("%s:%s", feedFetchErrorStatsKey, hourSuffix)).Int64(); err == nil {
+			errorStats[displayKey] = count
+		}
+	}
+
+	return successStats, errorStats
 }

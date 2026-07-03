@@ -111,6 +111,7 @@ func processFeed(feed models.Feed) (itemsCreated, itemsUpdated, errorsCount int,
 	}
 
 	itemsCreated, itemsUpdated, errorsCount = processParsedFeed(&feed, parsedFeed)
+	IncrementFeedFetchStats(true)
 	return itemsCreated, itemsUpdated, errorsCount, nil
 }
 
@@ -163,6 +164,8 @@ func updateFeedAfterSuccess(feed *models.Feed, parsedFeed *gofeed.Feed) error {
 }
 
 func recordFeedFetchError(feed *models.Feed, err error) {
+	IncrementFeedFetchStats(false)
+
 	app.Logger.Error().Str("feed_url", feed.URL).Err(err).Msg("Error parsing feed")
 
 	now := time.Now()

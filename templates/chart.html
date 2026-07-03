@@ -1,5 +1,16 @@
 {{ define "content" }}
     <div class="mb-4">
+        <h2>Feed Fetches per Hour (Last 24 Hours)</h2>
+        <p class="text-muted">This chart shows how many feeds were fetched successfully or with errors in each hour over the last 24 hours.</p>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <canvas id="feedFetchChart" width="400" height="150"></canvas>
+        </div>
+    </div>
+
+    <div class="mb-4">
         <h2>Items Created per Hour (Last 24 Hours)</h2>
         <p class="text-muted">This chart shows how many items were created in each hour over the last 24 hours.</p>
     </div>
@@ -12,9 +23,74 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
-        const ctx = document.getElementById('itemsChart').getContext('2d');
-        const chartData = {
-            labels: [{{ range $index, $label := .chartData.labels }}{{ if $index }}, {{ end }}"{{ $label }}"{{ end }}],
+        const hourLabels = [{{ range $index, $label := .chartData.labels }}{{ if $index }}, {{ end }}"{{ $label }}"{{ end }}];
+
+        const feedFetchCtx = document.getElementById('feedFetchChart').getContext('2d');
+        const feedFetchChartData = {
+            labels: hourLabels,
+            datasets: [{
+                label: 'Successful fetches',
+                data: [{{ range $index, $value := .feedChartData.success }}{{ if $index }}, {{ end }}{{ $value }}{{ end }}],
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }, {
+                label: 'Failed fetches',
+                data: [{{ range $index, $value := .feedChartData.error }}{{ if $index }}, {{ end }}{{ $value }}{{ end }}],
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        };
+
+        new Chart(feedFetchCtx, {
+            type: 'line',
+            data: feedFetchChartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Feed Fetches per Hour'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Fetches'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Hour'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+
+        const itemsCtx = document.getElementById('itemsChart').getContext('2d');
+        const itemsChartData = {
+            labels: hourLabels,
             datasets: [{
                 label: 'Items Created',
                 data: [{{ range $index, $value := .chartData.data }}{{ if $index }}, {{ end }}{{ $value }}{{ end }}],
@@ -26,9 +102,9 @@
             }]
         };
 
-        const config = {
+        new Chart(itemsCtx, {
             type: 'line',
-            data: chartData,
+            data: itemsChartData,
             options: {
                 responsive: true,
                 maintainAspectRatio: true,
@@ -65,9 +141,6 @@
                     }
                 }
             }
-        };
-
-        new Chart(ctx, config);
+        });
     </script>
 {{ end }}
-

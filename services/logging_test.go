@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -67,4 +68,31 @@ func TestAddLogEntry(t *testing.T) {
 	assert.Equal(t, "Test message 10", entries[len(entries)-1].Message, "Oldest kept entry should be last")
 
 	app.RedisClient.Del(app.RedisCtx, "app:fetch-logs")
+}
+
+func TestFeedFetchStats(t *testing.T) {
+	app.InitLogger()
+	initTestLogger()
+
+	if app.RedisClient == nil {
+		t.Skip("Redis client is not available, skipping test")
+	}
+
+	now := time.Now()
+	hourSuffix := now.Format("2006-01-02-15")
+	successKey := fmt.Sprintf("%s:%s", feedFetchSuccessStatsKey, hourSuffix)
+	errorKey := fmt.Sprintf("%s:%s", feedFetchErrorStatsKey, hourSuffix)
+	app.RedisClient.Del(app.RedisCtx, successKey, errorKey)
+
+	IncrementFeedFetchStats(true)
+	IncrementFeedFetchStats(true)
+	IncrementFeedFetchStats(false)
+
+	successStats, errorStats := GetFeedFetchStats()
+	displayKey := now.Format("2006-01-02 15:00")
+
+	assert.Equal(t, int64(2), successStats[displayKey])
+	assert.Equal(t, int64(1), errorStats[displayKey])
+
+	app.RedisClient.Del(app.RedisCtx, successKey, errorKey)
 }

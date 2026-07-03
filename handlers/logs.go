@@ -98,35 +98,42 @@ func ShowZerolog(c *gin.Context) {
 }
 
 func ShowChart(c *gin.Context) {
-	stats := services.GetItemsCreatedStats()
+	itemsStats := services.GetItemsCreatedStats()
+	successStats, errorStats := services.GetFeedFetchStats()
 
-	// Generate all 24 hours (even if no data) for complete chart
 	now := time.Now()
 	labels := make([]string, 24)
-	data := make([]int64, 24)
+	itemsData := make([]int64, 24)
+	feedSuccessData := make([]int64, 24)
+	feedErrorData := make([]int64, 24)
 
-	// Fill from oldest to newest (last 24 hours)
 	for i := 0; i < 24; i++ {
 		hourTime := now.Add(-time.Duration(23-i) * time.Hour)
 		hourLabel := hourTime.Format("2006-01-02 15:00")
 		labels[i] = hourLabel
 
-		// Get count from stats if available
-		if count, ok := stats[hourLabel]; ok {
-			data[i] = count
-		} else {
-			data[i] = 0
+		if count, ok := itemsStats[hourLabel]; ok {
+			itemsData[i] = count
+		}
+		if count, ok := successStats[hourLabel]; ok {
+			feedSuccessData[i] = count
+		}
+		if count, ok := errorStats[hourLabel]; ok {
+			feedErrorData[i] = count
 		}
 	}
 
-	chartData := gin.H{
-		"labels": labels,
-		"data":   data,
-	}
-
 	pageData := getTemplateData(c, gin.H{
-		"title":     "Items Created Chart",
-		"chartData": chartData,
+		"title": "Charts",
+		"chartData": gin.H{
+			"labels": labels,
+			"data":   itemsData,
+		},
+		"feedChartData": gin.H{
+			"labels":  labels,
+			"success": feedSuccessData,
+			"error":   feedErrorData,
+		},
 	})
 
 	c.HTML(http.StatusOK, "chart.html", pageData)
