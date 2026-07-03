@@ -96,3 +96,33 @@ func TestFeedFetchStats(t *testing.T) {
 
 	app.RedisClient.Del(app.RedisCtx, successKey, errorKey)
 }
+
+func TestItemsCreatedDailyStats(t *testing.T) {
+	app.InitLogger()
+	initTestLogger()
+
+	if app.RedisClient == nil {
+		t.Skip("Redis client is not available, skipping test")
+	}
+
+	now := time.Now()
+	dayKey := fmt.Sprintf("%s:%s", itemsCreatedDailyStatsKey, now.Format("2006-01-02"))
+	app.RedisClient.Del(app.RedisCtx, dayKey)
+
+	IncrementItemsCreatedStats()
+	IncrementItemsCreatedStats()
+	IncrementItemsCreatedStats()
+
+	stats := GetItemsCreatedDailyStats()
+	displayKey := now.Format("2006-01-02")
+
+	assert.Equal(t, int64(3), stats[displayKey])
+
+	labels, data := GetItemsCreatedDailyChartData()
+	assert.Equal(t, itemsCreatedDailyDays, len(labels))
+	assert.Equal(t, itemsCreatedDailyDays, len(data))
+	assert.Equal(t, displayKey, labels[len(labels)-1])
+	assert.Equal(t, int64(3), data[len(data)-1])
+
+	app.RedisClient.Del(app.RedisCtx, dayKey)
+}

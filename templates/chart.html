@@ -21,6 +21,17 @@
         </div>
     </div>
 
+    <div class="mb-4 mt-4">
+        <h2>Items Created per Day (Last 30 Days)</h2>
+        <p class="text-muted">This chart shows how many items were created each day over the last 30 days.</p>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <canvas id="itemsDailyChart" width="400" height="150"></canvas>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
         const hourLabels = [{{ range $index, $label := .chartData.labels }}{{ if $index }}, {{ end }}"{{ $label }}"{{ end }}];
@@ -133,6 +144,62 @@
                         title: {
                             display: true,
                             text: 'Hour'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+
+        const dayLabels = [{{ range $index, $label := .itemsDailyChartData.labels }}{{ if $index }}, {{ end }}"{{ $label }}"{{ end }}];
+        const itemsDailyCtx = document.getElementById('itemsDailyChart').getContext('2d');
+        const itemsDailyChartData = {
+            labels: dayLabels,
+            datasets: [{
+                label: 'Items Created',
+                data: [{{ range $index, $value := .itemsDailyChartData.data }}{{ if $index }}, {{ end }}{{ $value }}{{ end }}],
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        };
+
+        new Chart(itemsDailyCtx, {
+            type: 'line',
+            data: itemsDailyChartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Items Created per Day'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Items'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Day'
                         },
                         ticks: {
                             maxRotation: 45,

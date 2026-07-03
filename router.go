@@ -67,7 +67,7 @@ func setupRouter() *gin.Engine {
 
 		admin.GET("/feed-fetching-log", handlers.ShowLogs)
 		admin.GET("/zerolog", handlers.ShowZerolog)
-		admin.GET("/chart", handlers.ShowChart)
+		admin.GET("/charts", handlers.ShowChart)
 		admin.GET("/info", handlers.ShowInfo)
 		admin.POST("/info/dump-db-structure", handlers.DumpDBStructureAdmin)
 	}

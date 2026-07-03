@@ -11,9 +11,11 @@ import (
 const (
 	fetchLogsRedisKey         = "app:fetch-logs"
 	itemsCreatedStatsKey      = "app:items:created:stats"
+	itemsCreatedDailyStatsKey = "app:items:created:daily:stats"
 	feedFetchSuccessStatsKey  = "app:feeds:fetch:success:stats"
 	feedFetchErrorStatsKey    = "app:feeds:fetch:error:stats"
 	maxLogSize                = 1000
+	itemsCreatedDailyDays     = 30
 )
 
 // LogEntry represents a single log entry
@@ -101,6 +103,10 @@ func IncrementItemsCreatedStats() {
 
 	// Set expiration to 48 hours (to keep data for 24 hours + buffer)
 	app.RedisClient.Expire(app.RedisCtx, hourKey, 48*time.Hour)
+
+	dayKey := fmt.Sprintf("%s:%s", itemsCreatedDailyStatsKey, now.Format("2006-01-02"))
+	app.RedisClient.Incr(app.RedisCtx, dayKey)
+	app.RedisClient.Expire(app.RedisCtx, dayKey, (itemsCreatedDailyDays+30)*24*time.Hour)
 }
 
 // GetItemsCreatedStats returns statistics for items created in the last 24 hours
@@ -128,6 +134,48 @@ func GetItemsCreatedStats() map[string]int64 {
 	}
 
 	return stats
+}
+
+// GetItemsCreatedDailyStats returns statistics for items created in the last 30 days.
+// Returns a map where key is day (format: "YYYY-MM-DD") and value is count.
+func GetItemsCreatedDailyStats() map[string]int64 {
+	stats := make(map[string]int64)
+
+	if app.RedisClient == nil {
+		return stats
+	}
+
+	now := time.Now()
+	for i := 0; i < itemsCreatedDailyDays; i++ {
+		dayTime := now.AddDate(0, 0, -i)
+		dayKey := fmt.Sprintf("%s:%s", itemsCreatedDailyStatsKey, dayTime.Format("2006-01-02"))
+
+		count, err := app.RedisClient.Get(app.RedisCtx, dayKey).Int64()
+		if err == nil {
+			stats[dayTime.Format("2006-01-02")] = count
+		}
+	}
+
+	return stats
+}
+
+// GetItemsCreatedDailyChartData returns labels and counts for the daily items chart (last 30 days).
+func GetItemsCreatedDailyChartData() (labels []string, data []int64) {
+	stats := GetItemsCreatedDailyStats()
+	now := time.Now()
+	labels = make([]string, itemsCreatedDailyDays)
+	data = make([]int64, itemsCreatedDailyDays)
+
+	for i := 0; i < itemsCreatedDailyDays; i++ {
+		dayTime := now.AddDate(0, 0, -(itemsCreatedDailyDays-1-i))
+		dayLabel := dayTime.Format("2006-01-02")
+		labels[i] = dayLabel
+		if count, ok := stats[dayLabel]; ok {
+			data[i] = count
+		}
+	}
+
+	return labels, data
 }
 
 // IncrementFeedFetchStats increments the counter for successful or failed feed fetches in the current hour

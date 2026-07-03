@@ -99,6 +99,7 @@ func ShowZerolog(c *gin.Context) {
 
 func ShowChart(c *gin.Context) {
 	itemsStats := services.GetItemsCreatedStats()
+	dailyLabels, itemsDailyData := services.GetItemsCreatedDailyChartData()
 	successStats, errorStats := services.GetFeedFetchStats()
 
 	now := time.Now()
@@ -128,6 +129,10 @@ func ShowChart(c *gin.Context) {
 		"chartData": gin.H{
 			"labels": labels,
 			"data":   itemsData,
+		},
+		"itemsDailyChartData": gin.H{
+			"labels": dailyLabels,
+			"data":   itemsDailyData,
 		},
 		"feedChartData": gin.H{
 			"labels":  labels,
