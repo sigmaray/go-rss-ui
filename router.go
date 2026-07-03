@@ -18,6 +18,11 @@ func setupRouter() *gin.Engine {
 	router.HTMLRender = loadTemplates("./templates")
 	router.Static("/static", "./static")
 
+	// Uptime probes and Docker HEALTHCHECK use HEAD; Gin 1.11+ no longer maps HEAD from GET.
+	router.HEAD("/", handlers.Health)
+	router.GET("/health", handlers.Health)
+	router.HEAD("/health", handlers.Health)
+
 	store := cookie.NewStore([]byte(config.GetSessionSecret()))
 	store.Options(sessions.Options{
 		Path:     "/",

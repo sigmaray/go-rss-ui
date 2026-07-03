@@ -60,7 +60,7 @@ EXPOSE 8082
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:8082/ || exit 1
+    CMD wget --quiet --tries=1 --spider http://localhost:8082/health || exit 1
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["server"]

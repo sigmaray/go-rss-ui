@@ -56,6 +56,7 @@ npm test:headed
 | Spec | Coverage |
 |------|----------|
 | `cypress/e2e/home.cy.js` | Home page (title, no navbar when logged out) — no DB setup |
+| `cypress/e2e/health.cy.js` | Uptime probes (`HEAD /`, `GET`/`HEAD /health`) — no DB setup |
 | `cypress/e2e/auth.cy.js` | Authentication (login, logout, redirects, invalid credentials) |
 | `cypress/e2e/admin.cy.js` | Admin panel (users table, logout button) |
 | `cypress/e2e/feeds.cy.js` | Feed CRUD (create, edit, delete), validation, bulk delete |
